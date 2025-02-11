@@ -1,0 +1,6 @@
+Django
+djangorestframework
+djangorestframework-simplejwt
+django-model-utils
+djongo
+psycopg2
