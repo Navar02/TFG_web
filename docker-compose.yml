@@ -6,11 +6,15 @@ services:
       context: ./backend_folder
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "8000:8000" # El puerto expuesto para el frontend
     volumes:
       - ./backend_folder:/app
     environment:
+      # Aquí debes indicar las URL de las bases de datos, usando los nombres de servicio de los contenedores
       - DATABASE_URL=postgres://postgres_user:postgres_pass@db:5432/postgres_db
+      - MONGO_URL=mongodb://mongo:27017/miBaseDeDatos # URL para MongoDB, usando el nombre de servicio 'mongo'
+    env_file:
+      - ./backend_folder/.env
     depends_on:
       - db
       - mongo
@@ -20,11 +24,13 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "8080:8080" # Puerto expuesto para acceder a la aplicación frontend
     volumes:
       - ./frontend:/app
     stdin_open: true
     tty: true
+    environment:
+      - API_URL=http://backend:8000 # La URL del backend, usando el nombre de servicio 'backend'
 
   db:
     image: postgres
@@ -33,9 +39,13 @@ services:
       POSTGRES_PASSWORD: postgres_pass
       POSTGRES_DB: postgres_db
     ports:
-      - "5432:5432"
+      - "5432:5432" # El puerto expuesto para PostgreSQL
 
   mongo:
-    image: mongo
+    image: mongo:latest
+    container_name: mongodb_container
+    restart: always
     ports:
-      - "27017:27017"
+      - "27017:27017" # El puerto expuesto para MongoDB
+    volumes:
+      - ./init.js:/docker-entrypoint-initdb.d/init.js

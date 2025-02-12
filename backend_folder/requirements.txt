@@ -4,3 +4,6 @@ djangorestframework-simplejwt
 django-model-utils
 djongo
 psycopg2
+openai
+django-environ
+pymongo
