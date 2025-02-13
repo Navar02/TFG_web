@@ -84,15 +84,6 @@ DATABASES = {
         'PASSWORD': 'postgres_pass',
         'HOST': 'db',
         'PORT': 5432,
-    },
-    'mongo': {
-        'ENGINE': 'djongo',
-        'NAME': 'mongo_db',
-        'ENFORCE_SCHEMA': False,
-        'CLIENT': {
-            'host': 'mongo',
-            'port': 27017
-        }
     }
 }
 
