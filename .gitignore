@@ -26,3 +26,7 @@ pnpm-debug.log*
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+backend_folder/api/__pycache__/models.cpython-39.pyc
+backend_folder/api/__pycache__/models.cpython-39.pyc
+backend_folder/backend/__pycache__/settings.cpython-39.pyc
+backend_folder/api/__pycache__/models.cpython-39.pyc
