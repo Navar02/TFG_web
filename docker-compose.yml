@@ -27,6 +27,7 @@ services:
       - "8080:8080" # Puerto expuesto para acceder a la aplicación frontend
     volumes:
       - ./frontend:/app
+      - /app/node_modules
     stdin_open: true
     tty: true
     environment:
