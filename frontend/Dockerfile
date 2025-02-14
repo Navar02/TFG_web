@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 8080
 
 # Ejecuta el servidor de Vue
-CMD ["npm", "run", "serve"]
+CMD ["npm", "run", "build"]

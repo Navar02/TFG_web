@@ -10,7 +10,6 @@ services:
     volumes:
       - ./backend_folder:/app
     environment:
-      # Aquí debes indicar las URL de las bases de datos, usando los nombres de servicio de los contenedores
       - DATABASE_URL=postgres://postgres_user:postgres_pass@db:5432/postgres_db
       - MONGO_URL=mongodb://mongo:27017/miBaseDeDatos # URL para MongoDB, usando el nombre de servicio 'mongo'
     env_file:
@@ -32,6 +31,16 @@ services:
     tty: true
     environment:
       - API_URL=http://backend:8000 # La URL del backend, usando el nombre de servicio 'backend'
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./frontend/dist:/usr/share/nginx/html
+    depends_on:
+      - frontend
 
   db:
     image: postgres
