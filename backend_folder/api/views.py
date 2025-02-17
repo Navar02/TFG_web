@@ -100,3 +100,9 @@ def plan_view(request):
         return Response({"message": "Database connection error."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     return Response(trip_data, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def getSecQues_view(request):
+    security_questions = SecurityQuestion.objects.all()
+    questions = [{"id": question.id, "question": question.question} for question in security_questions]
+    return Response(questions, status=status.HTTP_200_OK)

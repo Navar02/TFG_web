@@ -20,6 +20,11 @@ const routes = [
     name: 'planner',
     component: () => import('../views/PlannerView.vue')
   },
+  {
+    path: '/register',
+    name: 'register',
+    component: () => import('../views/RegisterView.vue')
+  },
 ]
 
 const router = createRouter({

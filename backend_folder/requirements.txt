@@ -7,3 +7,4 @@ psycopg2
 openai
 django-environ
 pymongo
+django-cors-headers

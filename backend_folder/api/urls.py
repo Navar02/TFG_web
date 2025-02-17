@@ -10,4 +10,5 @@ urlpatterns = [
     path('register/', views.register_view, name='register'),  # Ruta para el endpoint register/
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'), # Ruta para el endpoint token/
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'), # Ruta para el endpoint token/refresh/
+    path('getSecQues/', views.getSecQues_view, name='getSecQues'), # Ruta para el endpoint getSecQues/
 ]
