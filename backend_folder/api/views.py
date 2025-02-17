@@ -3,8 +3,49 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from django.conf import settings
+from django.utils.timezone import make_aware
 from handlers.openAIFunctions import OpenAIPromptGenerator
 from handlers.mongo_handler import MongoDBHandler  # Importa la clase
+from .models import User, SecurityQuestion
+
+@api_view(['POST'])
+def register_view(request):
+    required_fields = ['email', 'password', 'security_question_id', 'answer', 'alias']
+    for field in required_fields:
+        if field not in request.data or not request.data[field]:
+            return Response({"message": "incorrect payload"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    username = request.data['email']
+    password = request.data['password']
+    security_question_id = request.data['security_question_id']
+    answer = request.data['answer']
+    alias = request.data['alias']
+    
+    if username != request.data['email']:
+        return Response({"message": "username and email must be the same"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        security_question = SecurityQuestion.objects.get(id=security_question_id)
+    except SecurityQuestion.DoesNotExist:
+        return Response({"message": "Security question not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    try:
+        user = User.objects.create_user(
+            username=username,
+            email=username,
+            password=password,
+            securityQuestion=security_question,
+            answer=answer,
+            alias=alias,
+            is_active=False,
+            last_login=make_aware(datetime.now())
+        )
+        user.save()
+    except Exception as e:
+        return Response({"message": "Database error: " + str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    return Response({"message": "User created successfully"}, status=status.HTTP_201_CREATED)
+
 
 @api_view(['POST'])
 def plan_view(request):
