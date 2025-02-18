@@ -7,6 +7,8 @@ from django.utils.timezone import make_aware
 from handlers.openAIFunctions import OpenAIPromptGenerator
 from handlers.mongo_handler import MongoDBHandler  # Importa la clase
 from .models import User, SecurityQuestion
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
 
 @api_view(['POST'])
 def register_view(request):
@@ -38,7 +40,7 @@ def register_view(request):
             answer=answer,
             alias=alias,
             is_active=False,
-            last_login=make_aware(datetime.now())
+            last_login=None
         )
         user.save()
     except Exception as e:
@@ -106,3 +108,48 @@ def getSecQues_view(request):
     security_questions = SecurityQuestion.objects.all()
     questions = [{"id": question.id, "question": question.question} for question in security_questions]
     return Response(questions, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def login_view(request):
+    required_fields = ['email', 'password']
+    for field in required_fields:
+        if field not in request.data:
+            return Response({"message": "incorrect payload"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    username = request.data['email']
+    password = request.data['password']
+    
+    user = User.objects.filter(username=username).first()
+    if user is None:
+        return Response({"message": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    if not user.check_password(password):
+        return Response({"message": "Incorrect password"}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    if not user.is_active:
+        return Response({"message": "User is not active"}, status=status.HTTP_401_UNAUTHORIZED)
+
+    # Actualizar last_login
+    user.last_login = make_aware(datetime.now())
+    user.save()
+    
+    # Generate tokens
+    refresh = RefreshToken.for_user(user)
+    access_token = str(refresh.access_token)
+    refresh_token = str(refresh)
+    
+    response = Response({
+        "message": "Login successful"
+    }, status=status.HTTP_200_OK)
+    
+    # Set cookie with user data and tokens
+    response.set_cookie('user_data', {
+        'username': user.username,
+        'email': user.email,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'access_token': access_token,
+        'refresh_token': refresh_token
+    })
+    
+    return response
