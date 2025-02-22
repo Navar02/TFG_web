@@ -52,10 +52,13 @@ export default {
                     // Print the content of the response body
                     console.log('Response Body:', data);
 
-                    // Save user data in a cookie
+                    // Save user data in a cookie with a max-age of 1 week (604800 seconds)
                     const userData = JSON.stringify(data.user_data);
-                    document.cookie = `user_data=${encodeURIComponent(userData)}; path=/`;
-                    
+                    const expires = new Date();
+                    expires.setTime(expires.getTime() + (7 * 24 * 60 * 60 * 1000));
+                    const domain = window.location.hostname;
+                    document.cookie = `user_data=${encodeURIComponent(userData)}; path=/; expires=${expires.toUTCString()}; domain=${domain}`;
+
                 } catch (error) {
                     console.error('Login failed:', error);
                     // Handle login error here
