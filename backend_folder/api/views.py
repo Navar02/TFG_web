@@ -1,4 +1,5 @@
 from datetime import datetime
+import json
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -7,6 +8,7 @@ from django.utils.timezone import make_aware
 from handlers.openAIFunctions import OpenAIPromptGenerator
 from handlers.mongo_handler import MongoDBHandler  # Importa la clase
 from .models import User, SecurityQuestion
+from handlers.token_handler import verify_token
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -138,18 +140,35 @@ def login_view(request):
     access_token = str(refresh.access_token)
     refresh_token = str(refresh)
     
-    response = Response({
-        "message": "Login successful"
-    }, status=status.HTTP_200_OK)
-    
-    # Set cookie with user data and tokens
-    response.set_cookie('user_data', {
+    # Prepare user data
+    user_data = {
         'username': user.username,
         'email': user.email,
         'first_name': user.first_name,
         'last_name': user.last_name,
         'access_token': access_token,
         'refresh_token': refresh_token
-    })
+    }
+    
+    response = Response({
+        "message": "Login successful",
+        "user_data": user_data
+    }, status=status.HTTP_200_OK)
     
     return response
+
+@api_view(['POST'])
+def verify_view(request):
+    cookie = request.COOKIES.get('user_data')
+    print(cookie)
+    if cookie is None:
+        return Response({"message": "User not logged in"}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    data = json.loads(cookie)
+    is_valid, message = verify_token(data)
+    if not is_valid:
+        return Response({"message": message}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    return Response({"message": message}, status=status.HTTP_200_OK)
+
+

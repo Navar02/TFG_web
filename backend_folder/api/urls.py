@@ -11,4 +11,5 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'), # Ruta para el endpoint token/refresh/
     path('getSecQues/', views.getSecQues_view, name='getSecQues'), # Ruta para el endpoint getSecQues/
     path('login/', views.login_view, name='login'),  # Ruta para el endpoint login/
+    path('verify/', views.verify_view, name='verify'),  # Ruta para el endpoint verify/ De momento solo es para probar si es valido el token
 ]
