@@ -7,7 +7,7 @@ from django.conf import settings
 from django.utils.timezone import make_aware
 from handlers.openAIFunctions import OpenAIPromptGenerator
 from handlers.mongo_handler import MongoDBHandler  # Importa la clase
-from .models import User, SecurityQuestion
+from .models import User, SecurityQuestion, Categories
 from handlers.token_handler import verify_token
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -111,6 +111,12 @@ def getSecQues_view(request):
     questions = [{"id": question.id, "question": question.question} for question in security_questions]
     return Response(questions, status=status.HTTP_200_OK)
 
+@api_view(['GET'])
+def getCategories_view(request):
+    categories = Categories.objects.all()
+    categories = [{"id": category.id, "name": category.type} for category in categories]
+    return Response(categories, status=status.HTTP_200_OK)
+
 @api_view(['POST'])
 def login_view(request):
     required_fields = ['email', 'password']
@@ -142,7 +148,7 @@ def login_view(request):
     
     # Prepare user data
     user_data = {
-        'username': user.username,
+        'alias': user.alias,
         'email': user.email,
         'first_name': user.first_name,
         'last_name': user.last_name,
@@ -159,12 +165,15 @@ def login_view(request):
 
 @api_view(['POST'])
 def verify_view(request):
-    cookie = request.COOKIES.get('user_data')
-    print(cookie)
-    if cookie is None:
+    data = request.data.get('user_data')
+    if data is None:
         return Response({"message": "User not logged in"}, status=status.HTTP_401_UNAUTHORIZED)
     
-    data = json.loads(cookie)
+    required_fields = ['alias', 'email', 'first_name', 'last_name', 'access_token', 'refresh_token']
+    for field in required_fields:
+        if field not in data:
+            return Response({"message": f"Missing field: {field}"}, status=status.HTTP_400_BAD_REQUEST)
+    
     is_valid, message = verify_token(data)
     if not is_valid:
         return Response({"message": message}, status=status.HTTP_401_UNAUTHORIZED)

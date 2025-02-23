@@ -10,6 +10,7 @@ urlpatterns = [
     path('register/', views.register_view, name='register'),  # Ruta para el endpoint register/
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'), # Ruta para el endpoint token/refresh/
     path('getSecQues/', views.getSecQues_view, name='getSecQues'), # Ruta para el endpoint getSecQues/
+    path('getCategories/', views.getCategories_view, name='getCategories'), # Ruta para el endpoint getCategories/
     path('login/', views.login_view, name='login'),  # Ruta para el endpoint login/
     path('verify/', views.verify_view, name='verify'),  # Ruta para el endpoint verify/ De momento solo es para probar si es valido el token
 ]

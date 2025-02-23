@@ -95,11 +95,14 @@ export default {
       this.isCityListVisible = false;
     },
 
-    fetchCategories() {
-      // Simulación de una llamada a API para obtener categorías dinámicas
-      setTimeout(() => {
-        this.categories = ["Ruinas", "Museos", "Iglesias", "Playas", "Puntos Turísticos", "Parques", "Montañas"];
-      }, 500); // Simula un retraso de API
+    async fetchCategories() {
+      try {
+        const response = await fetch('http://127.0.0.1:8000/getCategories/');
+        const data = await response.json();
+        this.categories = data.map(category => category.name);
+      } catch (error) {
+        console.error("Error fetching categories: ", error);
+      }
     },
 
     submitForm() {

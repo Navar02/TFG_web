@@ -6,7 +6,7 @@ def verify_token(cookie_data):
     try:
         # Obtener el token de acceso del contenido de la cookie
         token = cookie_data.get('access_token')
-        username = cookie_data.get('username')
+        username = cookie_data.get('email')
         if token is None or username is None:
             return False, "Invalid cookie data"
 
