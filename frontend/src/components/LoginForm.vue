@@ -1,8 +1,8 @@
 <template>
     <v-form ref="form" v-model="valid" lazy-validation>
-        <v-text-field v-model="email" label="Email" :rules="emailRules" required></v-text-field>
-        <v-text-field v-model="password" label="Password" :rules="passwordRules" type="password"
-            required></v-text-field>
+        <v-text-field v-model="email" label="Email" :rules="emailRules" required @input="clearError"></v-text-field>
+        <v-text-field v-model="password" label="Password" :rules="passwordRules" type="password" required @input="clearError"></v-text-field>
+        <v-alert v-if="errorMessage" type="error">{{ errorMessage }}</v-alert>
         <v-card-actions>
             <v-spacer></v-spacer>
             <v-btn color="primary" @click="login">Login</v-btn>
@@ -17,6 +17,7 @@ export default {
             valid: false,
             email: '',
             password: '',
+            errorMessage: '',
             emailRules: [
                 v => !!v || 'Email is required',
                 v => /.+@.+\..+/.test(v) || 'Email must be valid',
@@ -43,6 +44,8 @@ export default {
                     });
 
                     if (!response.ok) {
+                        const errorData = await response.json();
+                        this.errorMessage = errorData.message || 'Login failed';
                         throw new Error('Login failed');
                     }
 
@@ -52,19 +55,24 @@ export default {
                     // Print the content of the response body
                     console.log('Response Body:', data);
 
-                    // Save user data in a cookie with a max-age of 1 week (604800 seconds)
+                    // Save user data in local storage
                     const userData = JSON.stringify(data.user_data);
-                    const expires = new Date();
-                    expires.setTime(expires.getTime() + (7 * 24 * 60 * 60 * 1000));
-                    const domain = window.location.hostname;
-                    document.cookie = `user_data=${encodeURIComponent(userData)}; path=/; expires=${expires.toUTCString()}; domain=${domain}`;
+                    localStorage.setItem('user_data', userData);
+
+                    // Clear error message on successful login
+                    this.errorMessage = '';
 
                 } catch (error) {
                     console.error('Login failed:', error);
                     // Handle login error here
                 }
+            } else {
+                this.errorMessage = 'Please fill in all required fields correctly.';
             }
         },
+        clearError() {
+            this.errorMessage = '';
+        }
     },
 };
 </script>

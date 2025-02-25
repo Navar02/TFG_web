@@ -153,9 +153,15 @@ def login_view(request):
         'first_name': user.first_name,
         'last_name': user.last_name,
         'access_token': access_token,
-        'refresh_token': refresh_token
+        'refresh_token': refresh_token,
+        'role': None,
     }
     
+    if user.is_superuser:
+        user_data['role'] = 'admin'
+    else:
+        user_data['role'] = 'user'
+        
     response = Response({
         "message": "Login successful",
         "user_data": user_data
@@ -169,7 +175,7 @@ def verify_view(request):
     if data is None:
         return Response({"message": "User not logged in"}, status=status.HTTP_401_UNAUTHORIZED)
     
-    required_fields = ['alias', 'email', 'first_name', 'last_name', 'access_token', 'refresh_token']
+    required_fields = ['alias', 'email', 'first_name', 'last_name', 'access_token', 'refresh_token', 'role']
     for field in required_fields:
         if field not in data:
             return Response({"message": f"Missing field: {field}"}, status=status.HTTP_400_BAD_REQUEST)
