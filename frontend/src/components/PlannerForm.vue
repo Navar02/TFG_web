@@ -65,6 +65,7 @@ export default {
   },
   mounted() {
     this.fetchCategories();
+    this.restoreFormState();
   },
   methods: {
     handleCityInput() {
@@ -134,7 +135,22 @@ export default {
         endDate: this.endDate,
       };
       console.log("Datos enviados: ", searchData);
-      alert("Búsqueda realizada con éxito. Revisa la consola para los datos.");
+      localStorage.setItem('travel_data', JSON.stringify(searchData));
+      localStorage.setItem('form_state', JSON.stringify(searchData));
+      window.location.reload(); // Recargar la página para mostrar los resultados
+    },
+
+    restoreFormState() {
+      const formState = localStorage.getItem('form_state');
+      if (formState) {
+        const state = JSON.parse(formState);
+        this.cityQuery = state.city;
+        this.selectedCategories = state.categories;
+        this.includeHotels = state.includeHotels;
+        this.includeRestaurants = state.includeRestaurants;
+        this.startDate = state.startDate;
+        this.endDate = state.endDate;
+      }
     },
 
     onFocus() {
