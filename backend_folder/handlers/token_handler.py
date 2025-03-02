@@ -14,6 +14,11 @@ def verify_token(cookie_data):
     try:
         # Decodificar y validar el token
         access_token = AccessToken(token)
+        
+        # Check if the email in the token matches the email in the cookie data
+        if access_token["email"] != username:
+            return False, "Email in token does not match cookie data"
+        
         # Verifica automáticamente si ha expirado (lanzará una excepción si es inválido)
         access_token.check_exp()
     except TokenError as e:
