@@ -9,7 +9,7 @@
           <div class="search-container">
             <!-- Buscador de ciudades -->
             <v-text-field v-model="cityQuery" label="Buscar Ciudad" placeholder="Introduce una ciudad"
-              @input="handleCityInput" outlined dense @focus="onFocus" @blur="onBlur" class="no-margin"></v-text-field>
+              @input="handleCityInput" outlined dense @focus="onFocus" @blur="onBlurCity" class="no-margin"></v-text-field>
 
             <!-- Lista de sugerencias de ciudad -->
             <transition name="slide-fade">
@@ -22,8 +22,14 @@
             </transition>
           </div>
 
+          <!-- Campos de fecha de inicio y fin del viaje -->
+          <v-text-field v-model="startDate" label="Fecha de Inicio" type="date" outlined dense 
+            :min="today" @change="handleStartDateChange" @blur="validateStartDate"></v-text-field>
+          <v-text-field v-model="endDate" label="Fecha de Fin" type="date" outlined dense 
+            :min="startDate" :disabled="!startDate" @blur="validateEndDate"></v-text-field>
+
           <!-- Menú desplegable de categorías -->
-          <v-select v-model="selectedCategories" :items="categories" label="Categorías"
+          <v-select v-model="selectedCategories" :items="categories" label="Categorías de los lugares a recomendar"
             placeholder="Selecciona una o varias categorías" outlined dense multiple chips></v-select>
 
           <!-- Checkboxes para hoteles y restaurantes -->
@@ -52,6 +58,9 @@ export default {
       debounceTimeout: null,
       cache: {}, // Almacenar consultas previas
       isCityListVisible: false, // Controla la visibilidad de la lista de sugerencias
+      startDate: '',
+      endDate: '',
+      today: new Date().toISOString().split('T')[0], // Fecha actual en formato YYYY-MM-DD
     };
   },
   mounted() {
@@ -106,11 +115,23 @@ export default {
     },
 
     submitForm() {
+      const missingFields = [];
+      if (!this.cityQuery) missingFields.push('Buscar Ciudad');
+      if (!this.startDate) missingFields.push('Fecha de Inicio');
+      if (!this.endDate) missingFields.push('Fecha de Fin');
+
+      if (missingFields.length > 0) {
+        alert(`Por favor, rellena los siguientes campos: ${missingFields.join(', ')}`);
+        return;
+      }
+
       const searchData = {
         city: this.cityQuery,
         categories: this.selectedCategories,
         includeHotels: this.includeHotels,
-        includeRestaurants: this.includeRestaurants
+        includeRestaurants: this.includeRestaurants,
+        startDate: this.startDate,
+        endDate: this.endDate,
       };
       console.log("Datos enviados: ", searchData);
       alert("Búsqueda realizada con éxito. Revisa la consola para los datos.");
@@ -120,10 +141,35 @@ export default {
       this.isCityListVisible = true;
     },
 
-    onBlur() {
+    onBlurCity() {
       setTimeout(() => {
         this.isCityListVisible = false;
       }, 200); // Espera 200 ms antes de ocultar la lista para permitir la selección
+    },
+
+    handleStartDateChange() {
+      this.endDate = ''; // Borrar la fecha de fin si se modifica la fecha de inicio
+    },
+
+    validateStartDate() {
+      const todayParts = this.today.split('-');
+      const startDateParts = this.startDate.split('-');
+      if (startDateParts[0] < todayParts[0] || 
+          (startDateParts[0] === todayParts[0] && startDateParts[1] < todayParts[1]) || 
+          (startDateParts[0] === todayParts[0] && startDateParts[1] === todayParts[1] && startDateParts[2] < todayParts[2])) {
+        this.startDate = this.today;
+      }
+      this.endDate = ''; // Borrar la fecha de fin si se modifica la fecha de inicio
+    },
+
+    validateEndDate() {
+      const startDateParts = this.startDate.split('-');
+      const endDateParts = this.endDate.split('-');
+      if (endDateParts[0] < startDateParts[0] || 
+          (endDateParts[0] === startDateParts[0] && endDateParts[1] < startDateParts[1]) || 
+          (endDateParts[0] === startDateParts[0] && endDateParts[1] === startDateParts[1] && endDateParts[2] < startDateParts[2])) {
+        this.endDate = this.startDate;
+      }
     }
   }
 };
@@ -137,7 +183,6 @@ export default {
 /* Contenedor para el campo de búsqueda y las sugerencias */
 .search-container {
   position: relative;
-
 }
 
 /* Estilo para las sugerencias */
