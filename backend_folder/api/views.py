@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+import os
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -11,6 +12,9 @@ from .models import User, SecurityQuestion, Categories
 from handlers.token_handler import verify_token
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
+from handlers.email_handler import EmailHandler
+import jwt
+from django.http import HttpResponse
 
 @api_view(['POST'])
 def register_view(request):
@@ -33,6 +37,9 @@ def register_view(request):
     except SecurityQuestion.DoesNotExist:
         return Response({"message": "Security question not found"}, status=status.HTTP_404_NOT_FOUND)
     
+    if User.objects.filter(username=username).exists():
+        return Response({"message": "An account with this email already exists"}, status=status.HTTP_400_BAD_REQUEST)
+    
     try:
         user = User.objects.create_user(
             username=username,
@@ -45,10 +52,48 @@ def register_view(request):
             last_login=None
         )
         user.save()
+        EmailHandler().send_confirmation_email(user.email)
     except Exception as e:
         return Response({"message": "Database error: " + str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     return Response({"message": "User created successfully"}, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET'])
+def activate_account_view(request):
+    token = request.query_params.get('token')
+    if not token:
+        return Response({"message": "Token is missing"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        payload = jwt.decode(token, os.environ["SECRET_KEY"], algorithms=["HS256"])
+        user_email = payload['email']
+        user = User.objects.get(email=user_email)
+        if user.is_active:
+            return Response({"message": "Account is already activated"}, status=status.HTTP_400_BAD_REQUEST)
+        user.is_active = True
+        user.save()
+        html_content = f"""
+            <html>
+            <head>
+                <meta http-equiv="refresh" content="5;url=http://localhost" />
+            </head>
+            <body>
+                <h1>Account activated successfully</h1>
+                <p>Your account with email {user_email} has been activated successfully.</p>
+                <p>You will be redirected to the home page in 5 seconds.</p>
+            </body>
+            </html>
+        """
+        return HttpResponse(html_content)
+    except jwt.ExpiredSignatureError:
+        return Response({"message": "Activation link has expired"}, status=status.HTTP_400_BAD_REQUEST)
+    except jwt.InvalidTokenError:
+        return Response({"message": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
+    except User.DoesNotExist:
+        return Response({"message": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"message": "An error occurred: " + str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])

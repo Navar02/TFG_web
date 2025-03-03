@@ -13,4 +13,5 @@ urlpatterns = [
     path('getCategories/', views.getCategories_view, name='getCategories'), # Ruta para el endpoint getCategories/
     path('login/', views.login_view, name='login'),  # Ruta para el endpoint login/
     path('verify/', views.verify_view, name='verify'),  # Ruta para el endpoint verify/ De momento solo es para probar si es valido el token
+    path('activate/', views.activate_account_view, name='activate'),  # Ruta para el endpoint activate/
 ]

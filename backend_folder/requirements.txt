@@ -8,3 +8,5 @@ openai
 django-environ
 pymongo
 django-cors-headers
+resend
+pyjwt
