@@ -130,9 +130,12 @@ def plan_view(request):
         # Extraer el JSON válido desde la primera '{' hasta la última '}'
         start_index = raw_travel_plan.find('{')
         end_index = raw_travel_plan.rfind('}')
+        print("start_index:", start_index)
+        print("end_index:", end_index)
         if start_index == -1 or end_index == -1:
+            print("Error: No JSON found in the response.")
             raise ValueError("El resultado del agente no contiene un JSON válido.")
-        
+        print("raw_travel_plan:", raw_travel_plan[start_index:end_index + 1])
         travel_plan = json.loads(raw_travel_plan[start_index:end_index + 1])
     except ValueError as ve:
         print("Error al procesar el JSON del plan de viaje:", ve)
@@ -144,9 +147,25 @@ def plan_view(request):
     print("Generated travel plan:", travel_plan)
     date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
+    usr = None
+    data = request.data.get('user_data')
+    if data is not None:
+        field_missing = False
+        required_fields = ['alias', 'email', 'access_token', 'refresh_token', 'role']
+        for field in required_fields:
+            if field not in data:
+                usr = None
+                field_missing = True
+                break
+        if not field_missing:
+            is_valid, message = verify_token(data)
+            if is_valid:
+                usr = data['email']
+            
+    print("User data:", usr)
     # Guardar la respuesta en la colección trip usando MongoDBHandler
     trip_data = {
-        "user": None,  # Aquí puedes asociar el usuario si es necesario
+        "user": usr,  # Aquí puedes asociar el usuario si es necesario
         "date": date,
         "location": city,
         "startDate": start_date,

@@ -122,6 +122,5 @@ class OpenAIPromptAgent:
         except Exception as e:
             print("Error:", e)
             return {"error": "Hubo un error al generar el plan de viaje."}
-
-        print("Plan de viaje generado!", result.final_output)
+        
         return result.final_output
