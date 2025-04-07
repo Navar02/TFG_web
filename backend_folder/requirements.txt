@@ -5,8 +5,10 @@ django-model-utils
 djongo
 psycopg2
 openai
+openai-agents
 django-environ
 pymongo
 django-cors-headers
 resend
 pyjwt
+pydantic

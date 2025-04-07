@@ -1,4 +1,5 @@
 from datetime import datetime
+import asyncio
 import json
 import os
 from rest_framework.decorators import api_view
@@ -6,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.conf import settings
 from django.utils.timezone import make_aware
-from handlers.openAIFunctions import OpenAIPromptGenerator
+from handlers.openAIFunctions import OpenAIPromptAgent
 from handlers.mongo_handler import MongoDBHandler  # Importa la clase
 from .models import User, SecurityQuestion, Categories
 from handlers.token_handler import verify_token
@@ -98,53 +99,66 @@ def activate_account_view(request):
 
 @api_view(['POST'])
 def plan_view(request):
-    required_fields = ['city', 'categories', 'includeHotels', 'includeRestaurants']
+    required_fields = ['city', 'categories', 'startDate', 'endDate']
     for field in required_fields:
         if field not in request.data:
             return Response({"message": "incorrect payload"}, status=status.HTTP_400_BAD_REQUEST)
     
     city = request.data['city']
     categories = request.data['categories']
-    include_hotels = request.data['includeHotels']
-    include_restaurants = request.data['includeRestaurants']
+    start_date = request.data['startDate']
+    end_date = request.data['endDate']
+    print("Received data:", request.data)
     
-    # Genera el prompt para la API de OpenAI
-    prompt = f"Generate a travel plan for {city} including the following categories: {', '.join(categories)}."
-    if include_hotels:
-        prompt += " Include recommendations for hotels."
-    if include_restaurants:
-        prompt += " Include recommendations for restaurants."
+    # Calcular la duración del viaje en días
+    try:
+        start_date_obj = datetime.strptime(start_date, "%Y-%m-%d")
+        end_date_obj = datetime.strptime(end_date, "%Y-%m-%d")
+        duration = (end_date_obj - start_date_obj).days
+        if duration <= 0:
+            return Response({"message": "End date must be after start date"}, status=status.HTTP_400_BAD_REQUEST)
+    except ValueError:
+        return Response({"message": "Invalid date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
+    print("Duration:", duration)
     
     try:
-        # Inicializa el generador de prompts de OpenAI
-        openai_generator = OpenAIPromptGenerator()
-        generate_travel_plan = openai_generator.create_prompt_function(
-            system_message="You are a helpful travel assistant.",
-            max_tokens=500,
-            temperature=0.7
-        )
-        # Genera el plan de viaje usando la función generada
-        travel_plan = generate_travel_plan(prompt)
+        # Inicializa el agente de OpenAI
+        agent = OpenAIPromptAgent()
+        # Genera el plan de viaje usando el agente
+        raw_travel_plan = asyncio.run(agent.generate_travel_plan(city, duration, categories))
+        
+        # Extraer el JSON válido desde la primera '{' hasta la última '}'
+        start_index = raw_travel_plan.find('{')
+        end_index = raw_travel_plan.rfind('}')
+        if start_index == -1 or end_index == -1:
+            raise ValueError("El resultado del agente no contiene un JSON válido.")
+        
+        travel_plan = json.loads(raw_travel_plan[start_index:end_index + 1])
+    except ValueError as ve:
+        print("Error al procesar el JSON del plan de viaje:", ve)
+        return Response({"message": "Error: Invalid travel plan format."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     except Exception as e:
-        print("Error con la petición a OpenAI:", e)
-        travel_plan = "Error: Could not generate a travel plan at this time."
+        print("Error al generar el plan de viaje con el agente:", e)
+        return Response({"message": "Error: Could not generate a travel plan at this time."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+    print("Generated travel plan:", travel_plan)
     date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
     # Guardar la respuesta en la colección trip usando MongoDBHandler
     trip_data = {
-        "user": None,
+        "user": None,  # Aquí puedes asociar el usuario si es necesario
         "date": date,
         "location": city,
+        "startDate": start_date,
+        "endDate": end_date,
         "categories": categories,
-        "includeHotels": include_hotels,
-        "includeRestaurants": include_restaurants,
         "travelPlan": travel_plan
     }
     
     try:
         mongo_handler = MongoDBHandler()
         mongo_handler.save_trip(trip_data)
-        trip_data.pop("_id", None)
+        trip_data.pop("_id", None)  # Eliminar el ID de MongoDB antes de devolver la respuesta
     except Exception as e:
         return Response({"message": "Database connection error."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
