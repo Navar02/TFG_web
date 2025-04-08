@@ -17,6 +17,9 @@ from handlers.email_handler import EmailHandler
 import jwt
 from django.http import HttpResponse
 
+# Inicializa el agente de OpenAI
+agent = OpenAIPromptAgent()
+
 @api_view(['POST'])
 def register_view(request):
     required_fields = ['email', 'password', 'security_question_id', 'answer', 'alias']
@@ -109,7 +112,7 @@ def plan_view(request):
     start_date = request.data['startDate']
     end_date = request.data['endDate']
     print("Received data:", request.data)
-    
+    mongo_handler = MongoDBHandler()
     # Calcular la duración del viaje en días
     try:
         start_date_obj = datetime.strptime(start_date, "%Y-%m-%d")
@@ -122,21 +125,37 @@ def plan_view(request):
     print("Duration:", duration)
     
     try:
-        # Inicializa el agente de OpenAI
-        agent = OpenAIPromptAgent()
-        # Genera el plan de viaje usando el agente
-        raw_travel_plan = asyncio.run(agent.generate_travel_plan(city, duration, categories))
-        
-        # Extraer el JSON válido desde la primera '{' hasta la última '}'
-        start_index = raw_travel_plan.find('{')
-        end_index = raw_travel_plan.rfind('}')
-        print("start_index:", start_index)
-        print("end_index:", end_index)
-        if start_index == -1 or end_index == -1:
-            print("Error: No JSON found in the response.")
-            raise ValueError("El resultado del agente no contiene un JSON válido.")
-        print("raw_travel_plan:", raw_travel_plan[start_index:end_index + 1])
-        travel_plan = json.loads(raw_travel_plan[start_index:end_index + 1])
+        trip_data = {
+            "city": city,
+            "categories": categories,
+            "startDate": start_date,
+            "endDate": end_date,
+            "duration": duration
+        }
+        trip = mongo_handler.get_trip_match_perfect(trip_data)
+        print("Trip from DB found:", trip)
+        print("class:", type(trip))
+        #transformar el objeto dict a json
+        if trip is not None:
+            trip_json = json.loads(json.dumps(trip, default=str))
+            trip_json.pop("_id", None)  # Eliminar el ID de MongoDB antes de devolver la respuesta
+            print("Trip JSON:", trip_json)
+            travel_plan = trip_json["travelPlan"]
+        else:
+            
+            # Genera el plan de viaje usando el agente
+            raw_travel_plan = asyncio.run(agent.generate_travel_plan(city, duration, categories))
+            
+            # Extraer el JSON válido desde la primera '{' hasta la última '}'
+            start_index = raw_travel_plan.find('{')
+            end_index = raw_travel_plan.rfind('}')
+            print("start_index:", start_index)
+            print("end_index:", end_index)
+            if start_index == -1 or end_index == -1:
+                print("Error: No JSON found in the response.")
+                raise ValueError("El resultado del agente no contiene un JSON válido.")
+            print("raw_travel_plan:", raw_travel_plan[start_index:end_index + 1])
+            travel_plan = json.loads(raw_travel_plan[start_index:end_index + 1])
     except ValueError as ve:
         print("Error al procesar el JSON del plan de viaje:", ve)
         return Response({"message": "Error: Invalid travel plan format."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -175,7 +194,6 @@ def plan_view(request):
     }
     
     try:
-        mongo_handler = MongoDBHandler()
         mongo_handler.save_trip(trip_data)
         trip_data.pop("_id", None)  # Eliminar el ID de MongoDB antes de devolver la respuesta
     except Exception as e:
