@@ -78,7 +78,7 @@ class MongoDBHandler:
                 "categories": {"$in": trip_data["categories"]}
             }
             places = list(self.collection.find(query))
-
+            print(f"Se encontraron {len(places)} lugares que coinciden con los criterios.")
             if not places:
                 print("No se encontraron lugares que coincidan con los criterios.")
                 return None
@@ -102,35 +102,44 @@ class MongoDBHandler:
                 "plan_visita": []
             }
 
-            # Distribuir los lugares por días
+            # Agrupar los lugares por categoría
+            lugares_por_categoria = {categoria: [] for categoria in trip_data["categories"]}
+            for place in places:
+                for lugar in place["travelPlan"]["plan_visita"]:
+                    for detalle_lugar in lugar["lugares"]:
+                        if detalle_lugar["gusto_asociado"] in trip_data["categories"]:
+                            lugar_data = {
+                                "nombre": detalle_lugar["nombre"],
+                                "descripcion": detalle_lugar["descripcion"],
+                                "actividades": detalle_lugar["actividades"],
+                                "duracion_visita": detalle_lugar["duracion_visita"],
+                                "gusto_asociado": detalle_lugar["gusto_asociado"],
+                                "coordenadas": detalle_lugar["coordenadas"]
+                            }
+                            lugares_por_categoria[detalle_lugar["gusto_asociado"]].append(lugar_data)
+
+            # Distribuir los lugares por días, intentando equilibrar las categorías
             day = 1
             current_day_places = []
-            for place in places:
-                # Extraer información del lugar
-                lugar = {
-                    "nombre": place["travelPlan"]["plan_visita"][0]["lugares"][0]["nombre"],
-                    "descripcion": place["travelPlan"]["plan_visita"][0]["lugares"][0]["descripcion"],
-                    "actividades": place["travelPlan"]["plan_visita"][0]["lugares"][0]["actividades"],
-                    "duracion_visita": place["travelPlan"]["plan_visita"][0]["lugares"][0]["duracion_visita"],
-                    "gusto_asociado": place["travelPlan"]["plan_visita"][0]["lugares"][0]["gusto_asociado"],
-                    "coordenadas": place["travelPlan"]["plan_visita"][0]["lugares"][0]["coordenadas"]
-                }
-                current_day_places.append(lugar)
+            while any(lugares_por_categoria.values()) and day <= duration:
+                for categoria in trip_data["categories"]:
+                    if lugares_por_categoria[categoria]:
+                        current_day_places.append(lugares_por_categoria[categoria].pop(0))
+                        if len(current_day_places) == 3:  # Máximo 3 lugares por día
+                            travel_plan["plan_visita"].append({
+                                "dia": day,
+                                "lugares": current_day_places
+                            })
+                            current_day_places = []
+                            day += 1
+                            if day > duration:
+                                break
 
-                # Si se han asignado suficientes lugares para un día, agregar al plan
-                if len(current_day_places) >= 3 or day > duration:  # Ajustar el número de lugares por día
-                    travel_plan["plan_visita"].append({
-                        "dia": day,
-                        "lugares": current_day_places
-                    })
-                    current_day_places = []
-                    day += 1
-
-            # Agregar los lugares restantes al último día
+            # Agregar los lugares restantes al último día (máximo 3 lugares)
             if current_day_places:
                 travel_plan["plan_visita"].append({
                     "dia": day,
-                    "lugares": current_day_places
+                    "lugares": current_day_places[:3]  # Limitar a 3 lugares como máximo
                 })
 
             # Asegurarse de que el número de días no exceda la duración del viaje
@@ -147,6 +156,7 @@ class MongoDBHandler:
         Comprueba si el plan es correcto:
         - El número del último día debe ser igual a la duración del viaje.
         - El número de lugares de visita debe ser el mismo en todos los días.
+        - El número de lugares por categoría no debe desviarse más de 2 respecto a la mediana.
         """
         try:
             # Obtener la duración del viaje
@@ -165,6 +175,28 @@ class MongoDBHandler:
             for dia in plan_visita:
                 if len(dia["lugares"]) != num_lugares_por_dia:
                     print("Error: El número de lugares no es consistente en todos los días.")
+                    return False
+
+            # Contar el número de lugares por categoría en base a gustos_usuario
+            gustos_usuario = plan["gustos_usuario"]
+            lugares_por_categoria = {categoria: 0 for categoria in gustos_usuario}
+
+            for dia in plan_visita:
+                for lugar in dia["lugares"]:
+                    categoria = lugar["gusto_asociado"]
+                    if categoria in lugares_por_categoria:
+                        lugares_por_categoria[categoria] += 1
+
+            # Calcular la mediana del número de lugares por categoría
+            valores = list(lugares_por_categoria.values())
+            print(f"Valores por categoría: {valores}")
+            valores.sort()
+            mediana = valores[len(valores) // 2] if len(valores) % 2 != 0 else (valores[len(valores) // 2 - 1] + valores[len(valores) // 2]) // 2
+
+            # Validar que la desviación no sea mayor a 2 respecto a la mediana
+            for categoria, count in lugares_por_categoria.items():
+                if abs(count - mediana) > 2:
+                    print(f"Error: La categoría '{categoria}' tiene una desviación mayor a 2 respecto a la mediana.")
                     return False
 
             # Si pasa todas las validaciones, el plan es correcto
