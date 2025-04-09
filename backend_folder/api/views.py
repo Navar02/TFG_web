@@ -125,43 +125,50 @@ def plan_view(request):
     print("Duration:", duration)
     
     try:
-        trip_data = {
-            "city": city,
-            "categories": categories,
-            "startDate": start_date,
-            "endDate": end_date,
-            "duration": duration
-        }
-        trip = mongo_handler.get_trip_match_perfect(trip_data)
-        print("Trip from DB found:", trip)
-        print("class:", type(trip))
-        #transformar el objeto dict a json
-        if trip is not None:
-            trip_json = json.loads(json.dumps(trip, default=str))
-            trip_json.pop("_id", None)  # Eliminar el ID de MongoDB antes de devolver la respuesta
-            print("Trip JSON:", trip_json)
-            travel_plan = trip_json["travelPlan"]
+        if mongo_handler.check_city_in_db(city):
+            trip_data = {
+                "city": city,
+                "categories": categories,
+                "startDate": start_date,
+                "endDate": end_date,
+                "duration": duration
+            }
+            trip = mongo_handler.get_trip_match_perfect(trip_data)
+            print("Trip from DB found:", trip)
+            print("class:", type(trip))
+            #transformar el objeto dict a json
+            if trip is not None:
+                trip_json = json.loads(json.dumps(trip, default=str))
+                trip_json.pop("_id", None)  # Eliminar el ID de MongoDB antes de devolver la respuesta
+                print("Trip JSON:", trip_json)
+                travel_plan = trip_json["travelPlan"]
+            else:
+                if mongo_handler.check_any_categories_for_city(city, categories):
+                    new_trip = mongo_handler.mount_trip_from_data(trip_data)
+                    print("New trip from DB found:", new_trip)
+                    is_complete = mongo_handler.check_plan_is_correct(new_trip)
+                    print("Is complete:", is_complete)
+                    if is_complete:
+                        travel_plan = new_trip
+                    else:
+                        print("Trip not complete. Completing the plan.")
+                        travel_plan = complete_plan(city, duration, categories, new_trip)
+                else:
+                    print("No likes found in DB. But the city exists.")
+                    travel_plan = generate_plan(city, duration, categories)
+                    
         else:
+            travel_plan = generate_plan(city, duration, categories)
             
-            # Genera el plan de viaje usando el agente
-            raw_travel_plan = asyncio.run(agent.generate_travel_plan(city, duration, categories))
-            
-            # Extraer el JSON válido desde la primera '{' hasta la última '}'
-            start_index = raw_travel_plan.find('{')
-            end_index = raw_travel_plan.rfind('}')
-            print("start_index:", start_index)
-            print("end_index:", end_index)
-            if start_index == -1 or end_index == -1:
-                print("Error: No JSON found in the response.")
-                raise ValueError("El resultado del agente no contiene un JSON válido.")
-            print("raw_travel_plan:", raw_travel_plan[start_index:end_index + 1])
-            travel_plan = json.loads(raw_travel_plan[start_index:end_index + 1])
     except ValueError as ve:
         print("Error al procesar el JSON del plan de viaje:", ve)
         return Response({"message": "Error: Invalid travel plan format."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     except Exception as e:
         print("Error al generar el plan de viaje con el agente:", e)
         return Response({"message": "Error: Could not generate a travel plan at this time."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    if travel_plan.get("error",None) is not None:
+        return Response({"message": travel_plan["error"]}, status=status.HTTP_404_NOT_FOUND)
     
     print("Generated travel plan:", travel_plan)
     date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -281,3 +288,27 @@ def verify_view(request):
     return Response({"message": message}, status=status.HTTP_200_OK)
 
 
+def generate_plan(city, duration, categories):
+            # Genera el plan de viaje usando el agente
+    raw_travel_plan = asyncio.run(agent.generate_travel_plan(city, duration, categories))
+            
+    # Extraer el JSON válido desde la primera '{' hasta la última '}'
+    start_index = raw_travel_plan.find('{')
+    end_index = raw_travel_plan.rfind('}')
+    print("start_index:", start_index)
+    print("end_index:", end_index)
+    if start_index == -1 or end_index == -1:
+        print("Error: No JSON found in the response.")
+        raise ValueError("El resultado del agente no contiene un JSON válido.")
+    print("raw_travel_plan:", raw_travel_plan[start_index:end_index + 1])
+    travel_plan = json.loads(raw_travel_plan[start_index:end_index + 1])
+    return travel_plan
+
+def complete_plan(city, duration, categories, plan):
+    raw_travel_plan = asyncio.run(agent.complete_travel_plan(city, duration, categories, plan))
+    start_index = raw_travel_plan.find('{')
+    end_index = raw_travel_plan.rfind('}')
+    if start_index == -1 or end_index == -1:
+        print("Error: No JSON found in the response.")
+        raise ValueError("El resultado del agente no contiene un JSON válido.")
+    return json.loads(raw_travel_plan[start_index:end_index + 1])

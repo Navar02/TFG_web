@@ -40,19 +40,6 @@ class OpenAIPromptAgent:
                 openai_client=self.client,
             ),
         )
-
-        # Agente RailGuard para verificar la existencia de lugares
-        self.location_verification_guardrail = Agent(
-            name="Location Verification Guardrail",
-            instructions=(
-                "Verifica si el lugar proporcionado existe realmente. "
-                "Utiliza la herramienta WebSearchTool para realizar búsquedas en la web y confirmar la existencia del lugar."
-            ),
-            model=OpenAIChatCompletionsModel(
-                model="google/gemini-2.5-pro-exp-03-25:free",  # Modelo específico para verificación de lugares
-                openai_client=self.client,
-            ),
-        )
         
         @input_guardrail
         async def prompt_injection_guardrail(ctx: RunContextWrapper[None], agent: Agent, input: str,) -> GuardrailFunctionOutput:
@@ -63,17 +50,6 @@ class OpenAIPromptAgent:
             return GuardrailFunctionOutput(
                 output_info=result.final_output,
                 tripwire_triggered="prompt injection" in result.final_output.lower(),
-            )
-
-        @input_guardrail
-        async def location_verification_guardrail(ctx: RunContextWrapper[None], agent: Agent, input: str,) -> GuardrailFunctionOutput:
-            """
-            Guardrail para verificar la existencia de lugares.
-            """
-            result = await Runner.run(self.location_verification_guardrail, input, context=ctx.context)
-            return GuardrailFunctionOutput(
-                output_info=result.final_output,
-                tripwire_triggered="error" in result.final_output.lower(),
             )
 
         # Agente principal para generar el plan de viaje
@@ -100,8 +76,22 @@ class OpenAIPromptAgent:
             model=OpenAIChatCompletionsModel(model=self.model_name, openai_client=self.client),
             input_guardrails=[
                 prompt_injection_guardrail,  # Guardrail para detectar prompt injection
-                location_verification_guardrail,  # Guardrail para verificar la existencia de lugares
             ],
+        )
+        
+        self.completion_agent = Agent(
+            name="Completion Agent",
+            instructions=(
+                "Te encargarás de completar el plan de viaje generado por los datos de la BD."
+                "Ha de ser equilibrado y no superar las 8 horas de visita al día. Con al menos dos lugares por día y máximo tres lugares por día. " 
+                "Completa el JSON con el plan y ningún otro texto fuera del JSON definido después. "
+                "Asegúrate de que cada lugar tenga un gusto asociado que coincida con al menos uno de los gustos proporcionados en la solicitud: "
+                '{"lugar_visita": {"nombre": "[lugar]", "coordenadas": {"latitud": [latitud], "longitud": [longitud]}}, '
+                '"duracion_viaje": [duración en días], "gustos_usuario": [gustos del usuario], "plan_visita": [{"dia": 1, "lugares": [{"nombre": "[nombre del lugar]", '
+                '"descripcion": "[breve descripción del lugar]", "actividades": ["[actividad 1]", "[actividad 2]", "[actividad 3]"], '
+                '"duracion_visita": "[duración aproximada]", "gusto_asociado": "[uno de los gustos del usuario]", "coordenadas": {"latitud": [latitud], "longitud": [longitud]}}]}]}'            
+            ),
+            model=OpenAIChatCompletionsModel(model=self.model_name, openai_client=self.client),
         )
     
 
@@ -122,5 +112,26 @@ class OpenAIPromptAgent:
         except Exception as e:
             print("Error:", e)
             return {"error": "Hubo un error al generar el plan de viaje."}
+        
+        return result.final_output
+    
+    async def complete_travel_plan(self, place: str, duration: int, interests: list, plan: dict):
+        """
+        Completa un plan de viaje basado en el lugar, duración y gustos del usuario.
+        :param place: Nombre del lugar a visitar.
+        :param duration: Duración del viaje en días.
+        :param interests: Lista de gustos del usuario.
+        :param plan: Plan de viaje en formato JSON.
+        :return: JSON con el plan de visita completo o un error si el lugar no es válido.
+        """
+        # Crear el prompt dinámico con los parámetros proporcionados
+        prompt = f"Recuerda que solo generas JSON. Los datos son los siguientes: lugar: {place}, duracion: {duration}, gustos: {', '.join(interests)}, plan a completar: {plan}"
+        print("Prompt:", prompt)
+        # Ejecutar el agente principal con el prompt
+        try:
+            result = await Runner.run(self.completion_agent, prompt)
+        except Exception as e:
+            print("Error:", e)
+            return {"error": "Hubo un error al completar el plan de viaje."}
         
         return result.final_output
