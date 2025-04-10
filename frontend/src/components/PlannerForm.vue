@@ -148,10 +148,6 @@ export default {
         document.getElementById('loading').hidden = true; // Ocultar el loader
         document.getElementsByClassName('spin')[0].hidden = true; // Ocultar el spinner
         document.getElementsByClassName('loading-text')[0].hidden = true; // Ocultar el texto de carga
-        if (!response.ok) {
-          alert("No se encontraron resultados para tu búsqueda.");
-          return;
-        }
 
         const travelPlan = await response.json(); // Procesar el cuerpo de la respuesta como JSON
         console.log("Respuesta del servidor: ", travelPlan);
