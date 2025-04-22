@@ -1,5 +1,6 @@
 import asyncio
 import os
+from handlers.TokenEstimatorHandler import TokenEstimatorHandler
 from pydantic import BaseModel
 from openai import AsyncOpenAI
 from agents import (
@@ -62,9 +63,9 @@ class OpenAIPromptAgent:
             "Antes de 'lugar_visita', incluye un objeto 'estimacion_ahorro' con: "
             "'tiempo_ahorrado' (porcentaje estimado), 'energia_ahorrada' (porcentaje estimado) y 'horas_estimadas_ahorradas' (valor numérico en horas). "
             "Si [lugar] no es un destino real, responde estrictamente solo con este JSON: "
-            '{"error": "El lugar especificado no se encontró. Verifique el nombre e inténtelo de nuevo."} "
+            '{"error": "El lugar especificado no se encontró. Verifique el nombre e inténtelo de nuevo."} '
             "Si ocurre un fallo al generar el plan, responde estrictamente solo con este JSON: "
-            '{"error": "No fue posible generar el plan de viaje. Inténtelo de nuevo más tarde."} "
+            '{"error": "No fue posible generar el plan de viaje. Inténtelo de nuevo más tarde."} '
             "Si el lugar es válido y no hay errores, responde estrictamente solo con el siguiente JSON, sin texto adicional: "
             '{'
             '"estimacion_ahorro": {'
@@ -138,7 +139,12 @@ class OpenAIPromptAgent:
         :return: JSON con el plan de visita o un error si el lugar no es válido.
         """
         # Crear el prompt dinámico con los parámetros proporcionados
+        cost=51+39 #Valor estatico de tokens para el guardrail
+        cost = cost + TokenEstimatorHandler().estimar_tokens(self.travel_plan_instructions)
         prompt = f"Recuerda que solo generas JSON. Los datos son los siguientes: lugar: {place}, duracion: {duration}, gustos: {', '.join(interests)}"
+        print("coste con entrada:", cost)
+        cost = cost + TokenEstimatorHandler().estimar_tokens(prompt)
+        print("coste con prompt:", cost)
         print("Prompt:", prompt)
         # Ejecutar el agente principal con el prompt
         try:
@@ -146,8 +152,9 @@ class OpenAIPromptAgent:
         except Exception as e:
             print("Error:", e)
             return {"error": "Hubo un error al generar el plan de viaje."}
-        
-        return result.final_output
+        cost = cost + TokenEstimatorHandler().estimar_tokens(result.final_output)
+        print("coste con resultado:", cost)
+        return cost, result.final_output
     
     async def complete_travel_plan(self, place: str, duration: int, interests: list, plan: dict):
         """

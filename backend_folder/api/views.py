@@ -123,6 +123,7 @@ def plan_view(request):
     except ValueError:
         return Response({"message": "Invalid date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
     print("Duration:", duration)
+    cost = 0
     
     try:
         if mongo_handler.check_city_in_db(city):
@@ -155,10 +156,10 @@ def plan_view(request):
                         travel_plan = complete_plan(city, duration, categories, new_trip)
                 else:
                     print("No likes found in DB. But the city exists.")
-                    travel_plan = generate_plan(city, duration, categories)
+                    cost, travel_plan = generate_plan(city, duration, categories)
                     
         else:
-            travel_plan = generate_plan(city, duration, categories)
+            cost, travel_plan = generate_plan(city, duration, categories)
             
     except ValueError as ve:
         print("Error al procesar el JSON del plan de viaje:", ve)
@@ -197,7 +198,8 @@ def plan_view(request):
         "startDate": start_date,
         "endDate": end_date,
         "categories": categories,
-        "travelPlan": travel_plan
+        "travelPlan": travel_plan,
+        "cost": cost,
     }
     
     try:
@@ -290,7 +292,7 @@ def verify_view(request):
 
 def generate_plan(city, duration, categories):
             # Genera el plan de viaje usando el agente
-    raw_travel_plan = asyncio.run(agent.generate_travel_plan(city, duration, categories))
+    cost, raw_travel_plan = asyncio.run(agent.generate_travel_plan(city, duration, categories))
             
     # Extraer el JSON válido desde la primera '{' hasta la última '}'
     start_index = raw_travel_plan.find('{')
@@ -302,7 +304,7 @@ def generate_plan(city, duration, categories):
         raise ValueError("El resultado del agente no contiene un JSON válido.")
     print("raw_travel_plan:", raw_travel_plan[start_index:end_index + 1])
     travel_plan = json.loads(raw_travel_plan[start_index:end_index + 1])
-    return travel_plan
+    return cost, travel_plan
 
 def complete_plan(city, duration, categories, plan):
     raw_travel_plan = asyncio.run(agent.complete_travel_plan(city, duration, categories, plan))
