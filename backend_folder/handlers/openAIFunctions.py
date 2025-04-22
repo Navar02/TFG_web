@@ -53,26 +53,60 @@ class OpenAIPromptAgent:
             )
 
         # Agente principal para generar el plan de viaje
+        # Nuevo prompt para el agente "Travel Plan Generator"
+        self.travel_plan_instructions = (
+            "Crea un plan de viaje detallado a [lugar] de [duración en días] días, basado en los gustos del usuario: [gustos del usuario]. "
+            "Organiza las actividades sin superar 8 horas por día. Incluye solo lugares relacionados con los gustos indicados. "
+            "Por cada día, lista los lugares a visitar. Para cada lugar, incluye: descripción breve, al menos 2 actividades recomendadas, duración estimada de visita, gusto asociado y coordenadas (latitud y longitud). "
+            "Asegura equilibrio en el número de actividades y horas entre los días. Distribuye los lugares de forma equilibrada (por número o duración). "
+            "Antes de 'lugar_visita', incluye un objeto 'estimacion_ahorro' con: "
+            "'tiempo_ahorrado' (porcentaje estimado), 'energia_ahorrada' (porcentaje estimado) y 'horas_estimadas_ahorradas' (valor numérico en horas). "
+            "Si [lugar] no es un destino real, responde estrictamente solo con este JSON: "
+            '{"error": "El lugar especificado no se encontró. Verifique el nombre e inténtelo de nuevo."} "
+            "Si ocurre un fallo al generar el plan, responde estrictamente solo con este JSON: "
+            '{"error": "No fue posible generar el plan de viaje. Inténtelo de nuevo más tarde."} "
+            "Si el lugar es válido y no hay errores, responde estrictamente solo con el siguiente JSON, sin texto adicional: "
+            '{'
+            '"estimacion_ahorro": {'
+            '"tiempo_ahorrado": "[% estimado]", '
+            '"energia_ahorrada": "[% estimado]", '
+            '"horas_estimadas_ahorradas": "[horas estimadas]"'
+            '}, '
+            '"lugar_visita": {'
+            '"nombre": "[lugar]", '
+            '"coordenadas": {'
+            '"latitud": [latitud], '
+            '"longitud": [longitud]'
+            '}'
+            '}, '
+            '"duracion_viaje": [duración en días], '
+            '"gustos_usuario": [gustos del usuario], '
+            '"plan_visita": ['
+            '{'
+            '"dia": 1, '
+            '"lugares": ['
+            '{'
+            '"nombre": "[nombre del lugar]", '
+            '"descripcion": "[breve descripción del lugar]", '
+            '"actividades": ["[actividad 1]", "[actividad 2]"[, "..."]], '
+            '"duracion_visita": "[duración aproximada]", '
+            '"gusto_asociado": "[uno de los gustos del usuario]", '
+            '"coordenadas": {'
+            '"latitud": [latitud], '
+            '"longitud": [longitud]'
+            '}'
+            '}'
+            ']'
+            '}'
+            ']'
+            '}'
+        )
+
+
+        # Actualización del agente "Travel Plan Generator"
         self.agent = Agent(
             name="Travel Plan Generator",
-            instructions=(
-                "Genera un plan de visita detallado para un viaje a [lugar] con una duración de [duración en días] días, "
-                "basado en los intereses del usuario: [gustos del usuario]. "
-                "El plan debe organizar las actividades de manera equitativa entre los días, asegurando que la duración total de las visitas diarias no supere las 8 horas. "
-                "Los lugares seleccionados deben estar relacionados únicamente con los gustos del usuario proporcionados en la solicitud. "
-                "Para cada día, proporciona una lista de lugares a visitar. Para cada lugar, incluye una descripción breve, una lista de actividades recomendadas, "
-                "la duración aproximada de la visita, el gusto del usuario asociado y las coordenadas del lugar en formato de latitud y longitud. "
-                "Distribuye los lugares de manera equilibrada, ya sea en función del número de lugares por día o en función del tiempo total atribuido a cada día. "
-                "Elige la opción más adecuada según la cantidad de lugares recomendados. "
-                "Si [lugar] no corresponde a un destino real, devuelve estrictamente un JSON con el siguiente formato y ningún otro texto fuera del JSON: "
-                '{"error": "El lugar especificado no se encontró. Verifique el nombre e inténtelo de nuevo."} '
-                "Si el lugar es válido, devuelve estrictamente un JSON con la siguiente estructura y ningún otro texto fuera del JSON. "
-                "Asegúrate de que cada lugar tenga un gusto asociado que coincida con al menos uno de los gustos proporcionados en la solicitud: "
-                '{"lugar_visita": {"nombre": "[lugar]", "coordenadas": {"latitud": [latitud], "longitud": [longitud]}}, '
-                '"duracion_viaje": [duración en días], "gustos_usuario": [gustos del usuario], "plan_visita": [{"dia": 1, "lugares": [{"nombre": "[nombre del lugar]", '
-                '"descripcion": "[breve descripción del lugar]", "actividades": ["[actividad 1]", "[actividad 2]", "[actividad 3]"], '
-                '"duracion_visita": "[duración aproximada]", "gusto_asociado": "[uno de los gustos del usuario]", "coordenadas": {"latitud": [latitud], "longitud": [longitud]}}]}]}'
-            ),
+            instructions=self.travel_plan_instructions,
             model=OpenAIChatCompletionsModel(model=self.model_name, openai_client=self.client),
             input_guardrails=[
                 prompt_injection_guardrail,  # Guardrail para detectar prompt injection
