@@ -153,6 +153,7 @@ class OpenAIPromptAgent:
             print("Error:", e)
             return {"error": "Hubo un error al generar el plan de viaje."}
         cost = cost + TokenEstimatorHandler().estimar_tokens(result.final_output)
+        cost = cost + 200 #Desfase de 200 tokens para el resultado debido a no ser calculo exacto
         print("coste con resultado:", cost)
         return cost, result.final_output
     
