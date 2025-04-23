@@ -19,6 +19,6 @@ class TokenEstimatorHandler:
         """
         # Opción 1: Basado en caracteres
         tokens_por_caracter = 1 / 4  # Aproximación: 1 token cada 4 caracteres
-        estimacion = len(texto) * tokens_por_caracter
+        estimacion = len(texto) * tokens_por_caracter*1.2  # Ajuste por el uso de palabras y espacios
         
         return math.ceil(estimacion)

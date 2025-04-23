@@ -57,15 +57,14 @@ class OpenAIPromptAgent:
         # Nuevo prompt para el agente "Travel Plan Generator"
         self.travel_plan_instructions = (
             "Crea un plan de viaje detallado a [lugar] de [duración en días] días, basado en los gustos del usuario: [gustos del usuario]. "
-            "Organiza las actividades sin superar 8 horas por día. Incluye solo lugares relacionados con los gustos indicados. "
+            "Organiza las actividades sin superar 8 horas por día, pero al menos haya actividades por valor de 5 horas. Incluye solo lugares relacionados con los gustos indicados. "
             "Por cada día, lista los lugares a visitar. Para cada lugar, incluye: descripción breve, al menos 2 actividades recomendadas, duración estimada de visita, gusto asociado y coordenadas (latitud y longitud). "
             "Asegura equilibrio en el número de actividades y horas entre los días. Distribuye los lugares de forma equilibrada (por número o duración). "
             "Antes de 'lugar_visita', incluye un objeto 'estimacion_ahorro' con: "
             "'tiempo_ahorrado' (porcentaje estimado), 'energia_ahorrada' (porcentaje estimado) y 'horas_estimadas_ahorradas' (valor numérico en horas). "
             "Si [lugar] no es un destino real, responde estrictamente solo con este JSON: "
             '{"error": "El lugar especificado no se encontró. Verifique el nombre e inténtelo de nuevo."} '
-            "Si ocurre un fallo al generar el plan, responde estrictamente solo con este JSON: "
-            '{"error": "No fue posible generar el plan de viaje. Inténtelo de nuevo más tarde."} '
+            "Asegurate que el JSON sea válido y no contenga errores."
             "Si el lugar es válido y no hay errores, responde estrictamente solo con el siguiente JSON, sin texto adicional: "
             '{'
             '"estimacion_ahorro": {'
@@ -139,7 +138,7 @@ class OpenAIPromptAgent:
         :return: JSON con el plan de visita o un error si el lugar no es válido.
         """
         # Crear el prompt dinámico con los parámetros proporcionados
-        cost=51+39 #Valor estatico de tokens para el guardrail
+        cost=150 #Valor estatico de tokens para el guardrail (estimación de coste con holgura)
         cost = cost + TokenEstimatorHandler().estimar_tokens(self.travel_plan_instructions)
         prompt = f"Recuerda que solo generas JSON. Los datos son los siguientes: lugar: {place}, duracion: {duration}, gustos: {', '.join(interests)}"
         print("coste con entrada:", cost)
@@ -152,8 +151,7 @@ class OpenAIPromptAgent:
         except Exception as e:
             print("Error:", e)
             return {"error": "Hubo un error al generar el plan de viaje."}
-        cost = cost + TokenEstimatorHandler().estimar_tokens(result.final_output)
-        cost = cost + 400 #Desfase de 200 tokens para el resultado debido a no ser calculo exacto
+        cost = cost + TokenEstimatorHandler().estimar_tokens(result.final_output)#Desfase de 200 tokens para el resultado debido a no ser calculo exacto
         print("coste con resultado:", cost)
         return cost, result.final_output
     
