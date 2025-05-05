@@ -1,4 +1,5 @@
 <template>
+  <sideBarMenu />
     <v-container>
       <v-row justify="center">
         <v-col cols="12" md="6">
@@ -17,10 +18,11 @@
   
   <script>
   import LoginForm from '@/components/LoginForm.vue';
-  
+  import sideBarMenu from '@/components/sideBarMenu.vue';
   export default {
     components: {
       LoginForm,
+      sideBarMenu,
     },
   };
   </script>

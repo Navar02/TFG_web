@@ -1,4 +1,5 @@
 <template>
+  <sideBarMenu />
     <h1>Registro</h1>
     <div class="register-view">
       <RegisterForm />
@@ -7,10 +8,11 @@
   
   <script>
   import RegisterForm from '@/components/RegisterForm.vue';
-  
+  import sideBarMenu from '@/components/sideBarMenu.vue';
   export default {
     components: {
-      RegisterForm
+      RegisterForm,
+      sideBarMenu,
     }
   };
   </script>

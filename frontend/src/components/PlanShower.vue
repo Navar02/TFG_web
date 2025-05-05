@@ -18,27 +18,29 @@
             <v-card-text>
               <!-- Mostrar contenido del plan si no hay error -->
               <div v-if="!errorMessage">
-                <div v-for="(day, index) in travelPlan.travelPlan.plan_visita" :key="index" class="day">
-                  <v-subheader>Día {{ day.dia }}</v-subheader>
-                  <v-divider></v-divider>
-                  <div v-for="place in day.lugares" :key="place.nombre" class="place">
-                    <v-list-item>
-                      <v-list-item-content>
-                        <v-list-item-title>{{ place.nombre }}</v-list-item-title>
-                        <v-list-item-subtitle>{{ place.descripcion }}</v-list-item-subtitle>
-                        <v-list dense>
+                <v-row>
+                  <v-col cols="6" v-for="(day, index) in travelPlan.travelPlan.plan_visita" :key="index" class="day">
+                    <v-card outlined class="pa-2">
+                      <v-subheader>Día {{ day.dia }}</v-subheader>
+                      <v-divider></v-divider>
+                      <v-row>
+                        <v-col cols="12" v-for="place in day.lugares" :key="place.nombre" class="place">
                           <v-list-item>
-                            <v-list-item-content><strong>Actividades:</strong></v-list-item-content>
+                            <v-list-item-content>
+                              <v-list-item-title>{{ place.nombre }}</v-list-item-title>
+                              <v-list-item-subtitle>{{ place.descripcion }}</v-list-item-subtitle>
+                              <v-list dense>
+                                <div v-for="activity in place.actividades" :key="activity" class="activity">
+                                  - {{ activity }}
+                                </div>
+                              </v-list>
+                            </v-list-item-content>
                           </v-list-item>
-                          <v-list-item v-for="activity in place.actividades" :key="activity">
-                            <v-list-item-content>{{ activity }}</v-list-item-content>
-                          </v-list-item>
-                        </v-list>
-                      </v-list-item-content>
-                    </v-list-item>
-                    <v-divider></v-divider>
-                  </div>
-                </div>
+                        </v-col>
+                      </v-row>
+                    </v-card>
+                  </v-col>
+                </v-row>
                 <div id="map-container">
                   <l-map :zoom="zoom" :center="center" style="height: 500px; width: 100%;">
                     <l-tile-layer :url="url" :attribution="attribution"></l-tile-layer>
@@ -144,12 +146,17 @@ export default {
   margin-bottom: 10px;
 }
 
+.activity {
+  margin-left: 20px;
+  color: #555;
+}
+
 .v-list-item-title {
   font-weight: bold;
 }
 
 .v-list-item-subtitle {
-  color: #757575;
+  color: #353434;
 }
 
 .error-message {
