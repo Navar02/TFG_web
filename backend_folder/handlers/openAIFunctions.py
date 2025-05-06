@@ -68,8 +68,7 @@ class OpenAIPromptAgent:
             "Si el lugar es válido y no hay errores, responde estrictamente solo con el siguiente JSON, sin texto adicional: "
             '{'
             '"estimacion_ahorro": {'
-            '"tiempo_ahorrado": "[% estimado]", '
-            '"energia_ahorrada": "[% estimado]", '
+            '"energia_ahorrada": "[KWH estimados en base a las horas ahorradas]", '
             '"horas_estimadas_ahorradas": "[horas estimadas]"'
             '}, '
             '"lugar_visita": {'
