@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía Turística de {{ lugar_visita.nombre }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            color: #353434;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .card-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .divider {
+            border-top: 1px solid #ddd;
+            margin: 10px 0;
+        }
+        .day {
+            margin-bottom: 20px;
+        }
+        .place {
+            margin-bottom: 15px;
+        }
+        .place-title {
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .place-description {
+            margin: 5px 0;
+            color: #555;
+        }
+        .activities {
+            margin-left: 20px;
+            color: #555;
+        }
+        .coordinates {
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Título principal -->
+        <div class="card">
+            <div class="card-title">
+                Guía Turística de {{ lugar_visita.nombre }} - {{ duracion_viaje }} Días
+            </div>
+            <div class="divider"></div>
+            <p><strong>Estimación de ahorro:</strong></p>
+            <ul>
+                <li>Energía ahorrada: {{ estimacion_ahorro.energia_ahorrada }}</li>
+                <li>Horas estimadas ahorradas: {{ estimacion_ahorro.horas_estimadas_ahorradas }}</li>
+            </ul>
+            <p><strong>Gustos del usuario:</strong> {{ gustos_usuario }}</p>
+        </div>
+
+        <!-- Plan de visita -->
+        {% for day in plan_visita %}
+        <div class="card day">
+            <h2>Día {{ day.dia }}</h2>
+            <div class="divider"></div>
+            {% for place in day.lugares %}
+            <div class="place">
+                <div class="place-title">{{ place.nombre }}</div>
+                <div class="place-description">{{ place.descripcion }}</div>
+                <p><strong>Duración de la visita:</strong> {{ place.duracion_visita }}</p>
+                <p><strong>Gusto asociado:</strong> {{ place.gusto_asociado }}</p>
+                <p><strong>Actividades:</strong></p>
+                <ul class="activities">
+                    {% for activity in place.actividades %}
+                    <li>{{ activity }}</li>
+                    {% endfor %}
+                </ul>
+                <p class="coordinates">
+                    <strong>Coordenadas:</strong> Latitud {{ place.coordenadas.latitud }}, Longitud {{ place.coordenadas.longitud }}
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

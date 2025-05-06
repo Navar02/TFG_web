@@ -9,6 +9,7 @@ from django.conf import settings
 from django.utils.timezone import make_aware
 from handlers.openAIFunctions import OpenAIPromptAgent
 from handlers.mongo_handler import MongoDBHandler  # Importa la clase
+from handlers.pdf_handler import PDFGenerator
 from .models import User, SecurityQuestion, Categories
 from handlers.token_handler import verify_token
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -314,3 +315,17 @@ def complete_plan(city, duration, categories, plan):
         print("Error: No JSON found in the response.")
         raise ValueError("El resultado del agente no contiene un JSON válido.")
     return json.loads(raw_travel_plan[start_index:end_index + 1])
+
+@api_view(['POST'])
+def generate_pdf_view(request):
+    data = request.data.get('travelPlan')
+    print(type(data))
+    if data is None:
+        return Response({"message": "Trip data not provided"}, status=status.HTTP_400_BAD_REQUEST)
+    pdf_handler = PDFGenerator()
+    pdf = pdf_handler.render_pdf_bytes('plan_pdf.html', data)
+     # Return the PDF as an HTTP response
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="plan_turistico.pdf"'
+    return response
+    
