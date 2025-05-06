@@ -12,3 +12,7 @@ django-cors-headers
 resend
 pyjwt
 pydantic
+jinja2
+weasyprint
+selenium
+pillow
