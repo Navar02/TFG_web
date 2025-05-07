@@ -46,7 +46,9 @@ class PDFGenerator:
             <div id="map"></div>
             <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
             <script>
-                var map = L.map('map');
+                var map = L.map('map', {{
+                    zoomControl: false  // Deshabilitar los controles de zoom
+                }});
                 L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
                     maxZoom: 18,
                 }}).addTo(map);
