@@ -153,8 +153,10 @@ def plan_view(request):
                     if is_complete:
                         travel_plan = new_trip
                     else:
-                        print("Trip not complete. Completing the plan.")
-                        travel_plan = complete_plan(city, duration, categories, new_trip)
+                        print("Trip not complete. Generating new plan.")
+                        #travel_plan = complete_plan(city, duration, categories, new_trip)  
+                        #New plan generation from scratch, not token wise to complete the plan with data from DB
+                        cost, travel_plan = generate_plan(city, duration, categories)
                 else:
                     print("No likes found in DB. But the city exists.")
                     cost, travel_plan = generate_plan(city, duration, categories)
