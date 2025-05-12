@@ -63,58 +63,40 @@ export default {
     };
   },
   mounted() {
+    this.checkUserData(); // Verificar user_data al cargar la página
     this.fetchCategories();
     this.restoreFormState();
   },
   methods: {
-    handleCityInput() {
-      clearTimeout(this.debounceTimeout);
-      if (this.cityQuery.length > 2) {
-        this.isCityListVisible = true;
-        this.debounceTimeout = setTimeout(() => {
-          this.fetchCitySuggestions();
-        }, 300); // Espera 300 ms antes de hacer la solicitud
-      } else {
-        this.citySuggestions = [];
-        this.isCityListVisible = false;
-      }
-    },
+    async checkUserData() {
+      const storedUserData = localStorage.getItem('user_data');
+      if (storedUserData) {
+        const userData = JSON.parse(storedUserData);
 
-    async fetchCitySuggestions() {
-      if (this.cache[this.cityQuery]) {
-        this.citySuggestions = this.cache[this.cityQuery];
-        return;
-      }
+        try {
+          const response = await fetch('http://localhost:8000/verify/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ user_data: userData }),
+          });
 
-      const endpoint = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(this.cityQuery)}&format=json&limit=5`;
-      try {
-        const response = await fetch(endpoint);
-        const data = await response.json();
-        const suggestions = data.map(location => location.display_name);
-        this.citySuggestions = suggestions;
-        this.cache[this.cityQuery] = suggestions; // Cachear la respuesta
-      } catch (error) {
-        console.error("Error fetching city suggestions: ", error);
-      }
-    },
+          if (!response.ok) {
+            throw new Error('Verification failed');
+          }
 
-    selectCity(city) {
-      this.cityQuery = city;
-      this.citySuggestions = [];
-      this.isCityListVisible = false;
-    },
-
-    async fetchCategories() {
-      try {
-        const response = await fetch('http://127.0.0.1:8000/getCategories/');
-        const data = await response.json();
-        this.categories = data.map(category => category.name);
-      } catch (error) {
-        console.error("Error fetching categories: ", error);
+          console.log('User data is valid.');
+        } catch (error) {
+          console.error('Invalid user data. Removing from localStorage.');
+          localStorage.removeItem('user_data');
+        }
       }
     },
 
     async submitForm() {
+      await this.checkUserData(); // Verificar user_data antes de ejecutar el formulario
+
       const missingFields = [];
       if (!this.cityQuery) missingFields.push('Buscar Ciudad');
       if (!this.startDate) missingFields.push('Fecha de Inicio');
@@ -131,7 +113,14 @@ export default {
         startDate: this.startDate,
         endDate: this.endDate,
       };
-      console.log("Datos enviados: ", searchData);
+
+      // Agregar user_data si está presente en localStorage
+      const storedUserData = localStorage.getItem('user_data');
+      if (storedUserData) {
+        searchData.user_data = JSON.parse(storedUserData);
+      }
+
+      console.log('Datos enviados: ', searchData);
       localStorage.setItem('travel_data', JSON.stringify(searchData));
       localStorage.setItem('form_state', JSON.stringify(searchData));
       document.getElementById('loading').hidden = false; // Mostrar el loader
@@ -150,14 +139,13 @@ export default {
         document.getElementsByClassName('loading-text')[0].hidden = true; // Ocultar el texto de carga
 
         const travelPlan = await response.json(); // Procesar el cuerpo de la respuesta como JSON
-        console.log("Respuesta del servidor: ", travelPlan);
+        console.log('Respuesta del servidor: ', travelPlan);
         localStorage.setItem('travel_data', JSON.stringify(travelPlan)); // Guardar el JSON en localStorage
         window.location.reload(); // Recargar la página para mostrar el plan de viaje
       } catch (error) {
-        console.error("Error al obtener el plan de viaje: ", error);
-        alert("Hubo un error al procesar tu solicitud. Por favor, inténtalo de nuevo.");
+        console.error('Error al obtener el plan de viaje: ', error);
+        alert('Hubo un error al procesar tu solicitud. Por favor, inténtalo de nuevo.');
       }
-
     },
 
     restoreFormState() {
@@ -171,6 +159,20 @@ export default {
       }
     },
 
+    async fetchCategories() {
+      try {
+        const response = await fetch('http://127.0.0.1:8000/getCategories/');
+        const data = await response.json();
+        this.categories = data.map((category) => category.name);
+      } catch (error) {
+        console.error('Error fetching categories: ', error);
+      }
+    },
+
+    handleCityInput() {
+      // Lógica para manejar la entrada de la ciudad
+    },
+
     onFocus() {
       this.isCityListVisible = true;
     },
@@ -178,34 +180,26 @@ export default {
     onBlurCity() {
       setTimeout(() => {
         this.isCityListVisible = false;
-      }, 200); // Espera 200 ms antes de ocultar la lista para permitir la selección
+      }, 200);
+    },
+
+    selectCity(city) {
+      this.cityQuery = city;
+      this.isCityListVisible = false;
     },
 
     handleStartDateChange() {
-      this.endDate = ''; // Borrar la fecha de fin si se modifica la fecha de inicio
+      // Lógica para manejar el cambio de la fecha de inicio
     },
 
     validateStartDate() {
-      const todayParts = this.today.split('-');
-      const startDateParts = this.startDate.split('-');
-      if (startDateParts[0] < todayParts[0] ||
-        (startDateParts[0] === todayParts[0] && startDateParts[1] < todayParts[1]) ||
-        (startDateParts[0] === todayParts[0] && startDateParts[1] === todayParts[1] && startDateParts[2] < todayParts[2])) {
-        this.startDate = this.today;
-      }
-      this.endDate = ''; // Borrar la fecha de fin si se modifica la fecha de inicio
+      // Validar la fecha de inicio
     },
 
     validateEndDate() {
-      const startDateParts = this.startDate.split('-');
-      const endDateParts = this.endDate.split('-');
-      if (endDateParts[0] < startDateParts[0] ||
-        (endDateParts[0] === startDateParts[0] && endDateParts[1] < startDateParts[1]) ||
-        (endDateParts[0] === startDateParts[0] && endDateParts[1] === startDateParts[1] && endDateParts[2] < startDateParts[2])) {
-        this.endDate = this.startDate;
-      }
-    }
-  }
+      // Validar la fecha de fin
+    },
+  },
 };
 </script>
 

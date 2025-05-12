@@ -118,6 +118,7 @@ export default {
                 const data = await response.json();
                 if (response.ok) {
                     alert('Registro exitoso');
+                    this.$router.push('/'); // Redirigir a la página de inicio de sesión
                 } else {
                     alert(`Error: ${data.message}`);
                 }

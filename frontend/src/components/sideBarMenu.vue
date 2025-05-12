@@ -15,12 +15,6 @@
                 <router-link to="/" class="button">
                     <span class="material-icons">Inicio</span>
                 </router-link>
-                <router-link to="/register" class="button">
-                    <span class="material-icons">Registrarse</span>
-                </router-link>
-                <router-link to="/login" class="button">
-                    <span class="material-icons">Iniciar Sesión</span>
-                </router-link>
                 <router-link to="/about" class="button">
                     <span class="material-icons">Acerca de la web</span>
                 </router-link>

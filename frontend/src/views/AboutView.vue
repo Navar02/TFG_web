@@ -1,5 +1,6 @@
 <template>
   <SideBarMenu />
+  <UserMenu />
   <div class="container">
     <h1 class="title">Sobre las Funcionalidades</h1>
     <div class="card">
@@ -24,12 +25,14 @@
 import { defineComponent } from 'vue';
 // Components
 import SideBarMenu from '../components/sideBarMenu.vue';
+import UserMenu from '@/components/UserMenu.vue';
 
 export default defineComponent({
   name: 'AboutView',
 
   components: {
     SideBarMenu,
+    UserMenu,
   },
 });
 </script>

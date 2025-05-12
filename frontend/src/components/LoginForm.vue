@@ -62,6 +62,8 @@ export default {
                     // Clear error message on successful login
                     this.errorMessage = '';
 
+                    this.$router.push('/'); // Redirect to home page
+
                 } catch (error) {
                     console.error('Login failed:', error);
                     // Handle login error here

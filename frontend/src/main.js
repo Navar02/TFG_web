@@ -7,6 +7,10 @@ import { createPinia } from 'pinia'
 
 loadFonts()
 
+router.afterEach((to) => {
+  document.title = to.meta.title || 'Plan Your Trip'
+})
+
 createApp(App).use(createPinia())
   .use(router)
   .use(vuetify)
