@@ -66,8 +66,22 @@ export default {
     this.checkUserData(); // Verificar user_data al cargar la página
     this.fetchCategories();
     this.restoreFormState();
+    this.check_seen(); // Verificar el estado del formulario
   },
   methods: {
+    check_seen() {
+      const seen1 = localStorage.getItem('seen');
+        if (seen1) {
+        
+        if (seen1 === "0") {
+          localStorage.setItem('seen', "1");
+        }
+        if (seen1 === "1") {
+          localStorage.removeItem('plan_pdf');
+          localStorage.removeItem('seen');
+        }
+      }
+    },
     async checkUserData() {
       const storedUserData = localStorage.getItem('user_data');
       if (storedUserData) {
@@ -96,7 +110,6 @@ export default {
 
     async submitForm() {
       await this.checkUserData(); // Verificar user_data antes de ejecutar el formulario
-
       const missingFields = [];
       if (!this.cityQuery) missingFields.push('Buscar Ciudad');
       if (!this.startDate) missingFields.push('Fecha de Inicio');
@@ -141,6 +154,8 @@ export default {
         const travelPlan = await response.json(); // Procesar el cuerpo de la respuesta como JSON
         console.log('Respuesta del servidor: ', travelPlan);
         localStorage.setItem('travel_data', JSON.stringify(travelPlan)); // Guardar el JSON en localStorage
+        localStorage.setItem('plan_pdf', JSON.stringify(travelPlan)); // Guardar el PDF en localStorage
+        localStorage.setItem('seen', "0"); // Guardar el estado del formulario
         window.location.reload(); // Recargar la página para mostrar el plan de viaje
       } catch (error) {
         console.error('Error al obtener el plan de viaje: ', error);
