@@ -12,7 +12,27 @@ class MongoDBHandler:
         except errors.ConnectionFailure as e:
             print("Error al conectar con MongoDB:", e)
             raise
-
+    
+    def get_trips_by_user(self, user_email):
+        try:
+            query = {"user": user_email}
+            results = list(self.collection.find(query))
+            print(type(results))
+            print(results)
+            return results
+        except Exception as e:
+            print("Error al buscar viajes en MongoDB:", e)
+            raise
+        
+    def get_trip_by_id(self, trip_id, user_email):
+        try:
+            query = {"_id": trip_id, "user": user_email}
+            result = list(self.collection.find(query))[0]
+            return result
+        except Exception as e:
+            print("Error al buscar viaje en MongoDB:", e)
+            raise
+    
     def save_trip(self, trip_data):
         try:
             self.collection.insert_one(trip_data)

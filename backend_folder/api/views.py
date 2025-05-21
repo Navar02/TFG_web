@@ -17,6 +17,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from handlers.email_handler import EmailHandler
 import jwt
 from django.http import HttpResponse
+from bson import ObjectId
 
 # Inicializa el agente de OpenAI
 agent = OpenAIPromptAgent()
@@ -291,6 +292,36 @@ def verify_view(request):
         return Response({"message": message}, status=status.HTTP_401_UNAUTHORIZED)
     
     return Response({"message": message}, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def get_trip_or_trips_view(request):
+    try:
+        trip_id = request.data.get('id',None)
+        user = request.data.get('user_data',None)
+        print("Received id:", id)
+        print("User data:", user)
+        checker = verify_token(user)
+        if checker[0]:
+            mongo_handler = MongoDBHandler()
+            if trip_id:
+                # Si hay id, buscar solo ese viaje
+                trip = mongo_handler.get_trip_by_id(ObjectId(trip_id), user['email'])
+                trip.pop("_id", None)  # Eliminar el ID de MongoDB antes de devolver la respuesta
+                if trip:
+                    return Response(trip, status=status.HTTP_200_OK)
+                else:
+                    return Response({"message": "Trip not found"}, status=status.HTTP_404_NOT_FOUND)
+            else:
+                # Si no hay id, devolver todos los viajes
+                trips = mongo_handler.get_trips_by_user(user['email'])
+                for trip in trips:
+                    trip['_id'] = str(trip['_id'])
+                return Response(trips, status=status.HTTP_200_OK)
+        else:
+            return Response({"message": checker[1]}, status=status.HTTP_401_UNAUTHORIZED)
+    except Exception as e:
+        print("Error al obtener los viajes:", e)
+        return Response({"message": "Error: Could not retrieve trips at this time."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 def generate_plan(city, duration, categories):

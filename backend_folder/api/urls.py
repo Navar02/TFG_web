@@ -15,4 +15,5 @@ urlpatterns = [
     path('verify/', views.verify_view, name='verify'),  # Ruta para el endpoint verify/ De momento solo es para probar si es valido el token
     path('activate/', views.activate_account_view, name='activate'),  # Ruta para el endpoint activate/
     path('generate_pdf/', views.generate_pdf_view, name='generate_pdf'),  # Ruta para el endpoint generate_pdf/
+    path('trips/', views.get_trip_or_trips_view, name='get_trip_or_trips'),  # Ruta para el endpoint /trips
 ]
