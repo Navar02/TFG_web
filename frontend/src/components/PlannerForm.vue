@@ -82,6 +82,23 @@ export default {
         }
       }
     },
+    async fetchCitySuggestions() {
+      if (this.cache[this.cityQuery]) {
+        this.citySuggestions = this.cache[this.cityQuery];
+        return;
+      }
+
+      const endpoint = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(this.cityQuery)}&format=json&limit=5`;
+      try {
+        const response = await fetch(endpoint);
+        const data = await response.json();
+        const suggestions = data.map(location => location.display_name);
+        this.citySuggestions = suggestions;
+        this.cache[this.cityQuery] = suggestions; // Cachear la respuesta
+      } catch (error) {
+        console.error("Error fetching city suggestions: ", error);
+      }
+    },
     async checkUserData() {
       const storedUserData = localStorage.getItem('user_data');
       if (storedUserData) {
@@ -186,6 +203,16 @@ export default {
 
     handleCityInput() {
       // Lógica para manejar la entrada de la ciudad
+      clearTimeout(this.debounceTimeout);
+      if (this.cityQuery.length > 2) {
+        this.isCityListVisible = true;
+        this.debounceTimeout = setTimeout(() => {
+          this.fetchCitySuggestions();
+        }, 300); // Espera 300 ms antes de hacer la solicitud
+      } else {
+        this.citySuggestions = [];
+        this.isCityListVisible = false;
+      }
     },
 
     onFocus() {
@@ -205,14 +232,36 @@ export default {
 
     handleStartDateChange() {
       // Lógica para manejar el cambio de la fecha de inicio
+      const todayParts = this.today.split('-');
+      const startDateParts = this.startDate.split('-');
+      if (startDateParts[0] < todayParts[0] || 
+          (startDateParts[0] === todayParts[0] && startDateParts[1] < todayParts[1]) || 
+          (startDateParts[0] === todayParts[0] && startDateParts[1] === todayParts[1] && startDateParts[2] < todayParts[2])) {
+        this.startDate = this.today;
+      }
+      this.endDate = '';
     },
 
     validateStartDate() {
-      // Validar la fecha de inicio
+      // Validar la fecha de inicio que no sea anterior a la fecha actual
+      const todayParts = this.today.split('-');
+      const startDateParts = this.startDate.split('-');
+      if (startDateParts[0] < todayParts[0] || 
+          (startDateParts[0] === todayParts[0] && startDateParts[1] < todayParts[1]) || 
+          (startDateParts[0] === todayParts[0] && startDateParts[1] === todayParts[1] && startDateParts[2] < todayParts[2])) {
+        this.startDate = this.today;
+      }
+      this.endDate = '';
     },
 
     validateEndDate() {
-      // Validar la fecha de fin
+      const startDateParts = this.startDate.split('-');
+      const endDateParts = this.endDate.split('-');
+      if (endDateParts[0] < startDateParts[0] || 
+          (endDateParts[0] === startDateParts[0] && endDateParts[1] < startDateParts[1]) || 
+          (endDateParts[0] === startDateParts[0] && endDateParts[1] === startDateParts[1] && endDateParts[2] < startDateParts[2])) {
+        this.endDate = this.startDate;
+      }
     },
   },
 };

@@ -20,7 +20,6 @@
             <div class="popup-section">
                 <strong>Estimación de ahorro:</strong>
                 <ul>
-                    <li>Tiempo ahorrado: {{ mensaje.travelPlan?.estimacion_ahorro?.tiempo_ahorrado }}</li>
                     <li>Energía ahorrada: {{ mensaje.travelPlan?.estimacion_ahorro?.energia_ahorrada }}</li>
                     <li>Horas estimadas ahorradas: {{ mensaje.travelPlan?.estimacion_ahorro?.horas_estimadas_ahorradas
                         }}</li>
