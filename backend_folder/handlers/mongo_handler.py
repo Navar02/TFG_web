@@ -262,8 +262,6 @@ class MongoDBHandler:
                     horas = viaje.get("travelPlan", {}).get("estimacion_ahorro", {}).get("horas_estimadas_ahorradas", 0)
                     try:
                         horas = int(horas)
-                        print(viaje.get("_id",{}))
-                        print(horas)
                     except Exception:
                         horas = 0
                     horas_totales_ahorradas += horas
