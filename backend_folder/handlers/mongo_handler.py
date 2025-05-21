@@ -225,3 +225,55 @@ class MongoDBHandler:
         except Exception as e:
             print("Error al comprobar la validez del plan:", e)
             raise
+        
+    def get_user_stats(self, user_email):
+        try:
+            query = {"user": user_email}
+            results = list(self.collection.find(query))
+            if len(results) == 0:
+                print("No se encontraron viajes para el usuario.")
+                return {
+                    "num_viajes": 0,
+                    "duracion_total": 0,
+                    "energia_total_ahorrada": 0.0,
+                    "horas_totales_ahorradas": 0
+                }
+            else:
+                print("Se encontraron viajes para el usuario.")
+                num_viajes = len(results)
+                duracion_total = 0
+                energia_total_ahorrada = 0.0
+                horas_totales_ahorradas = 0
+
+                for viaje in results:
+                    # Duración total
+                    duracion = viaje.get("travelPlan", {}).get("duracion_viaje", 0)
+                    duracion_total += duracion
+
+                    # Energía ahorrada (puede venir como "0.05 KWh")
+                    energia_str = viaje.get("travelPlan", {}).get("estimacion_ahorro", {}).get("energia_ahorrada", "0")
+                    try:
+                        energia_val = float(energia_str.split()[0])
+                    except Exception:
+                        energia_val = 0.0
+                    energia_total_ahorrada += energia_val
+
+                    # Horas ahorradas
+                    horas = viaje.get("travelPlan", {}).get("estimacion_ahorro", {}).get("horas_estimadas_ahorradas", 0)
+                    try:
+                        horas = int(horas)
+                        print(viaje.get("_id",{}))
+                        print(horas)
+                    except Exception:
+                        horas = 0
+                    horas_totales_ahorradas += horas
+
+                return {
+                    "num_viajes": num_viajes,
+                    "duracion_total": duracion_total,
+                    "energia_total_ahorrada": energia_total_ahorrada,
+                    "horas_totales_ahorradas": horas_totales_ahorradas
+                }
+        except Exception as e:
+            print("Error al buscar viajes en MongoDB:", e)
+            raise

@@ -69,7 +69,7 @@ class OpenAIPromptAgent:
             '{'
             '"estimacion_ahorro": {'
             '"energia_ahorrada": "[energía ahorrada en kilovatios hora para un ordenador que consume en base a las horas estimadas, sabiendo que consume unos 7,2 kwh en un dia]", '
-            '"horas_estimadas_ahorradas": "[horas estimadas]"'
+            '"horas_estimadas_ahorradas": "[horas estimadas en horas]", '
             '}, '
             '"lugar_visita": {'
             '"nombre": "[lugar]", '

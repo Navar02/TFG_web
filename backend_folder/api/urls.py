@@ -16,4 +16,5 @@ urlpatterns = [
     path('activate/', views.activate_account_view, name='activate'),  # Ruta para el endpoint activate/
     path('generate_pdf/', views.generate_pdf_view, name='generate_pdf'),  # Ruta para el endpoint generate_pdf/
     path('trips/', views.get_trip_or_trips_view, name='get_trip_or_trips'),  # Ruta para el endpoint /trips
+    path('stats/', views.get_user_stats_view, name='get_stats'),  # Ruta para el endpoint /stats
 ]

@@ -361,4 +361,18 @@ def generate_pdf_view(request):
     response = HttpResponse(pdf, content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="plan_turistico.pdf"'
     return response
+
+@api_view(['POST'])
+def get_user_stats_view(request):
+    data = request.data.get('user_data')
+    if data is None:
+        return Response({"message": "User credentials not provided"}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    checker = verify_token(data)
+    if checker[0]:
+        mongo_handler = MongoDBHandler()
+        user_stats = mongo_handler.get_user_stats(data['email'])
+        return Response(user_stats, status=status.HTTP_200_OK)
+    else:
+        return Response({"message": checker[1]}, status=status.HTTP_401_UNAUTHORIZED)
     
