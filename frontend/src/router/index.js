@@ -36,6 +36,13 @@ const routes = [
     meta: { title: "Plan Your Trip" },
     component: () => import("../views/LoginView.vue"),
   },
+  {
+    path: "/guides",
+    name: "guides",
+    meta: { title: "Plan Your Trip" },
+    component: () => import("../views/TripsView.vue"),
+  },
+
 ];
 
 const router = createRouter({
