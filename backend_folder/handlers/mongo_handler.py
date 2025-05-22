@@ -236,7 +236,8 @@ class MongoDBHandler:
                     "num_viajes": 0,
                     "duracion_total": 0,
                     "energia_total_ahorrada": 0.0,
-                    "horas_totales_ahorradas": 0
+                    "horas_totales_ahorradas": 0,
+                    "tokens_totales": 0
                 }
             else:
                 print("Se encontraron viajes para el usuario.")
@@ -244,11 +245,15 @@ class MongoDBHandler:
                 duracion_total = 0
                 energia_total_ahorrada = 0.0
                 horas_totales_ahorradas = 0
+                tokens_totales = 0
 
                 for viaje in results:
                     # Duración total
                     duracion = viaje.get("travelPlan", {}).get("duracion_viaje", 0)
                     duracion_total += duracion
+                    # Tokens totales
+                    tokens = viaje.get("cost", 0)
+                    tokens_totales += tokens
 
                     # Energía ahorrada (puede venir como "0.05 KWh")
                     energia_str = viaje.get("travelPlan", {}).get("estimacion_ahorro", {}).get("energia_ahorrada", "0")
@@ -270,7 +275,8 @@ class MongoDBHandler:
                     "num_viajes": num_viajes,
                     "duracion_total": duracion_total,
                     "energia_total_ahorrada": energia_total_ahorrada,
-                    "horas_totales_ahorradas": horas_totales_ahorradas
+                    "horas_totales_ahorradas": horas_totales_ahorradas,
+                    "tokens_totales": tokens_totales
                 }
         except Exception as e:
             print("Error al buscar viajes en MongoDB:", e)
