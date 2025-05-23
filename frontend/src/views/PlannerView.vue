@@ -44,6 +44,10 @@ export default {
     },
     async generatePdf() {
       const planPdf = localStorage.getItem('plan_pdf');
+      const JSONplanPdf = JSON.parse(planPdf); // Convertir a objeto JSON
+      const jsonbody = { type: 'plan', travelPlan: JSONplanPdf.travelPlan };
+      const jsonbodyString = JSON.stringify(jsonbody);
+      console.log('jsonbody:', jsonbodyString);
       if (!planPdf) {
         alert('No hay datos disponibles para generar el PDF.');
         return;
@@ -55,7 +59,7 @@ export default {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: planPdf, // Enviar los datos de plan_pdf como JSON
+          body: jsonbodyString, // Enviar los datos de plan_pdf como JSON
         });
 
         if (!response.ok) {

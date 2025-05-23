@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Estadísticas de Consumo de Tokens</title>
+    <style>
+    @page {
+        size: A4 portrait;
+        margin: 1mm;
+    }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    .container { width: 95%; max-width: 900px; margin: 30px auto; background: #f9f9f9; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px #0001; }
+    .stats { display: flex; flex-wrap: wrap; justify-content: space-around; margin-bottom: 30px; }
+    .stat-box { background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; padding: 20px 30px; text-align: center; min-width: 180px; margin: 10px; flex: 1 1 180px; }
+    .stat-box h2 { margin: 0 0 10px 0; font-size: 1em; color: #555; text-align: center; }
+    .stat-box p { font-size: 1.5em; margin: 0; color: #007bff; text-align: center; }
+    .charts-wrapper {
+        page-break-inside: avoid;
+        break-inside: avoid;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 20px;
+        width: 100%;
+    }
+    .chart-box {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px #0001;
+        padding: 8px;
+        width: 90%;
+        min-width: 220px;
+        max-width: 700px;
+        margin-bottom: 0;
+        box-sizing: border-box;
+        page-break-inside: avoid;
+        break-inside: avoid;
+        text-align: center;
+    }
+    .chart-box h3 {
+        font-size: 0.95em;
+        margin-bottom: 4px;
+        text-align: center;
+        font-weight: normal;
+    }
+    .chart-box img {
+        width: 100%;
+        height: 325px;
+        object-fit: contain;
+        display: block;
+        margin: 0 auto;
+    }
+    .tables { display: flex; flex-wrap: wrap; justify-content: space-around; gap: 18px; margin-top: 30px; }
+    .table-box { background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; padding: 8px; min-width: 180px; max-width: 320px; width: 100%; overflow-x: auto; margin-bottom: 18px; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 0.82em; }
+    th, td { border-bottom: 1px solid #eee; padding: 3px 2px; text-align: center; word-break: break-word; }
+    th { background: #f1f1f1; color: #333; }
+    .table-box, .table-box table, .table-box tr, .table-box td, .table-box th, .table-box tbody, .table-box thead {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+    @media (max-width: 900px) {
+        .charts-wrapper, .tables { flex-direction: column; align-items: center; }
+        .chart-box, .table-box { width: 98%; min-width: 0; max-width: 100%; }
+        .chart-box img { height: auto; }
+    }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1>Estadísticas de Consumo de Tokens</h1>
+        <div class="stats">
+            <div class="stat-box">
+                <h2>Total mes actual ({{ month_name }} {{ year }})</h2>
+                <p>{{ month_total }}</p>
+            </div>
+            <div class="stat-box">
+                <h2>Total últimos 30 días</h2>
+                <p>{{ last_30_days_total }}</p>
+            </div>
+            <div class="stat-box">
+                <h2>Total año actual ({{ year }})</h2>
+                <p>{{ year_total }}</p>
+            </div>
+            <div class="stat-box">
+                <h2>Total histórico</h2>
+                <p>{{ total }}</p>
+            </div>
+        </div>
+        <div style="page-break-after: always;"></div>
+        <div class="charts-wrapper">
+            <div class="chart-box">
+                <img src="{{ graphs.graph_days_month }}" alt="Gráfico días mes">
+            </div>
+            <div class="chart-box">
+                <img src="{{ graphs.graph_months_year }}" alt="Gráfico meses año">
+            </div>
+            <div class="chart-box">
+                <img src="{{ graphs.graph_last_30_days }}" alt="Gráfico últimos 30 días">
+            </div>
+        </div>
+        <div class="tables">
+            <!-- Tabla días del mes -->
+            <div class="table-box">
+                <h3>Días del mes ({{ month_name }})</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">Día</th>
+                            <th style="width: 60px;">Tokens</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for day in days_for_month|dictsort %}
+                        <tr>
+                            <td>{{ day[0] }}</td>
+                            <td>{{ day[1] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <!-- Tabla meses del año -->
+            <div class="table-box">
+                <h3>Meses del año</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Mes</th>
+                            <th>Tokens</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set month_names = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"] %}
+                        {% for i in range(1, 13) %}
+                        <tr>
+                            <td>{{ month_names[i-1] }}</td>
+                            <td>{{ months_for_year[i] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <!-- Tabla últimos 30 días -->
+            <div class="table-box">
+                <h3>Últimos 30 días</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Día-Mes</th>
+                            <th>Tokens</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for day, tokens in days_last_30.items() %}
+                        <tr>
+                            <td>{{ day }}</td>
+                            <td>{{ tokens }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

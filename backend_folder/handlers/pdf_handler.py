@@ -7,6 +7,9 @@ import os
 import base64
 import io
 import time
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')  # Para entornos sin display
 
 class PDFGenerator:
     def __init__(self):
@@ -92,11 +95,19 @@ class PDFGenerator:
         print("Generating PDF with template:", template_name)
         print("Templates directory for PDF generation:", self.env.loader.searchpath)
 
-        # Extraer coordenadas y generar imagen de mapa
-        coordinates = self.extract_coordinates_from_context(context)
-        if coordinates:
-            self.generate_map_html(coordinates)
-            context['map_image'] = self.generate_map_image_base64()
+        if template_name is None:
+            raise ValueError("Template name cannot be None")
+        if template_name == "":
+            raise ValueError("Template name cannot be empty")
+        if template_name == "plan_pdf.html":
+            # Extraer coordenadas y generar imagen de mapa
+            coordinates = self.extract_coordinates_from_context(context)
+            if coordinates:
+                self.generate_map_html(coordinates)
+                context['map_image'] = self.generate_map_image_base64()
+        else:
+            graphs = self.generate_graphs_for_pdf(context)
+            context['graphs'] = graphs
 
         print("Context for template:", context)
         template = self.env.get_template(template_name)
@@ -104,3 +115,59 @@ class PDFGenerator:
         pdf_bytes = HTML(string=html_content).write_pdf()
         print("PDF bytes generated successfully")
         return pdf_bytes
+    
+    def generate_graphs_for_pdf(self, context):
+        import io
+        import base64
+
+        def fig_to_base64(fig):
+            buf = io.BytesIO()
+            fig.savefig(buf, format='png', bbox_inches='tight')
+            buf.seek(0)
+            img_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+            plt.close(fig)
+            return f"data:image/png;base64,{img_base64}"
+
+        # 1. Consumo de tokens por días del mes
+        days = sorted(context['days_for_month'].keys(), key=lambda x: int(x))
+        values = [context['days_for_month'][day] for day in days]
+        fig1, ax1 = plt.subplots()
+        ax1.plot([int(day) for day in days], values, marker='o', color='dodgerblue')
+        ax1.set_title(f"Consumo de tokens por días del mes ({context['month_name']} {context['year']})", fontsize=13)
+        ax1.set_xlabel("Día")
+        ax1.set_ylabel("Tokens")
+        ax1.grid(True)
+        graph1 = fig_to_base64(fig1)
+
+        # 2. Consumo de tokens por meses del año
+        months = [str(m) for m in range(1, 13)]
+        month_names = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
+        # Asegura que cada mes tenga un valor, aunque sea 0
+        months_for_year = {str(k): v for k, v in context['months_for_year'].items()}
+        values2 = [months_for_year.get(m, 0) for m in months]
+        fig2, ax2 = plt.subplots()
+        ax2.plot(month_names, values2, marker='o', color='forestgreen')
+        ax2.set_title(f"Consumo de tokens por meses del año ({context['year']})", fontsize=13)
+        ax2.set_xlabel("Mes")
+        ax2.set_ylabel("Tokens")
+        ax2.grid(True)
+        ax2.set_xticklabels(month_names, rotation=30, ha='right')
+        graph2 = fig_to_base64(fig2)
+
+        # 3. Consumo de tokens últimos 30 días
+        days_30 = list(context['days_last_30'].keys())
+        values3 = [context['days_last_30'][k] for k in days_30]
+        fig3, ax3 = plt.subplots()
+        ax3.plot(days_30, values3, marker='o', color='orange')
+        ax3.set_title("Consumo de tokens últimos 30 días", fontsize=13)
+        ax3.set_xlabel("Día-Mes")
+        ax3.set_ylabel("Tokens")
+        ax3.grid(True)
+        plt.setp(ax3.get_xticklabels(), rotation=45, ha='right')
+        graph3 = fig_to_base64(fig3)
+
+        return {
+            'graph_days_month': graph1,
+            'graph_months_year': graph2,
+            'graph_last_30_days': graph3
+        }

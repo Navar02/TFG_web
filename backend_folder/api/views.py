@@ -351,15 +351,41 @@ def complete_plan(city, duration, categories, plan):
 
 @api_view(['POST'])
 def generate_pdf_view(request):
-    data = request.data.get('travelPlan')
-    print(type(data))
-    if data is None:
-        return Response({"message": "Trip data not provided"}, status=status.HTTP_400_BAD_REQUEST)
     pdf_handler = PDFGenerator()
-    pdf = pdf_handler.render_pdf_bytes('plan_pdf.html', data)
+    type = request.data.get('type')
+    if type is None:
+        return Response({"message": "Type not provided"}, status=status.HTTP_400_BAD_REQUEST)
+    if type not in ['plan', 'tokens']:
+        return Response({"message": "Invalid type"}, status=status.HTTP_400_BAD_REQUEST)
+    if type == 'tokens':
+        data = request.data.get('user_data')
+        role = data.get('role')
+        if role is None:
+            return Response({"message": "User credentials not provided"}, status=status.HTTP_401_UNAUTHORIZED)
+        if role != 'admin' and (role == 'admin' and User.objects.filter(email=data['email'], is_superuser=False).exists()):
+            return Response({"message": "User is not admin"}, status=status.HTTP_401_UNAUTHORIZED)
+            
+        if data is None:
+            return Response({"message": "User credentials not provided"}, status=status.HTTP_401_UNAUTHORIZED)
+        checker = verify_token(data)
+        if checker[0]:
+            mongo_handler = MongoDBHandler()
+            tokens = mongo_handler.get_token_consumptions()
+            if tokens is None:
+                return Response({"message": "No tokens found"}, status=status.HTTP_404_NOT_FOUND)
+            pdf = pdf_handler.render_pdf_bytes('tokens_pdf.html', tokens)
+    else:
+        data = request.data.get('travelPlan')
+        print(data)
+        if data is None:
+            return Response({"message": "Trip data not provided"}, status=status.HTTP_400_BAD_REQUEST)
+        pdf = pdf_handler.render_pdf_bytes('plan_pdf.html', data)
      # Return the PDF as an HTTP response
     response = HttpResponse(pdf, content_type='application/pdf')
-    response['Content-Disposition'] = 'attachment; filename="plan_turistico.pdf"'
+    if type == 'plan':
+        response['Content-Disposition'] = 'attachment; filename="plan_de_viaje.pdf"'
+    else:
+        response['Content-Disposition'] = 'attachment; filename="consumo_de_tokens.pdf"'
     return response
 
 @api_view(['POST'])

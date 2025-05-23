@@ -71,7 +71,10 @@ function hidePopup() {
 
 async function descargarPDF() {
     try {
-        const StringMSG = JSON.stringify(props.mensaje)
+        const jsonbody = { type: 'plan', travelPlan: props.mensaje.travelPlan }
+        //const StringMSG = JSON.stringify(props.mensaje)
+        const StringMSG = JSON.stringify(jsonbody)
+        console.log("StringMSG:", StringMSG)
         const plan_visita = { plan_visita: JSON.parse(StringMSG) }
         console.log("plan:", plan_visita)
         const response = await fetch('http://localhost:8000/generate_pdf/', {

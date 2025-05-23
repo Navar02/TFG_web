@@ -25,6 +25,11 @@
         </div>
       </div>
     </div>
+    <div style="display: flex; justify-content: center; margin-bottom: 2em;">
+      <button @click="descargarPlanPDF" style="background: #1976d2; color: #fff; border: none; border-radius: 6px; padding: 0.8em 2em; font-size: 1em; cursor: pointer;">
+        Descargar plan de viaje en PDF
+      </button>
+    </div>
     <div class="graphs-row">
       <div class="graph-container">
         <h3>Consumo de tokens por días del mes ({{ data.month_name }} {{ data.year }})</h3>
@@ -274,6 +279,43 @@ function renderCharts() {
       }
     }
   })
+}
+
+async function descargarPlanPDF() {
+  const userdata = localStorage.getItem('user_data');
+  if (!userdata) {
+    alert('No hay datos disponibles para generar el PDF.');
+    return;
+  }
+  const JSONuserdata = JSON.parse(userdata);
+  console.log(JSONuserdata);
+  const jsonbody = { type: 'tokens', user_data: JSONuserdata };
+  const jsonbodyString = JSON.stringify(jsonbody);
+  console.log(jsonbodyString);
+  try {
+    const response = await fetch('http://localhost:8000/generate_pdf/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonbodyString,
+    });
+    if (!response.ok) {
+      throw new Error(response.statusText);
+    }
+    const blob = await response.blob();
+    const pdfUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = pdfUrl;
+    link.download = 'token_consumptions.pdf';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(pdfUrl);
+  } catch (error) {
+    console.error('Error al generar el PDF:', error);
+    alert('Hubo un error al generar el PDF. Por favor, inténtalo de nuevo.');
+  }
 }
 
 async function fetchTokenConsumptions() {
