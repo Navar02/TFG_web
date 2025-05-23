@@ -2,6 +2,8 @@ from datetime import datetime
 import random
 from pymongo import MongoClient, errors
 from django.conf import settings
+from datetime import datetime, timedelta
+import calendar
 
 class MongoDBHandler:
     def __init__(self):
@@ -278,6 +280,102 @@ class MongoDBHandler:
                     "horas_totales_ahorradas": horas_totales_ahorradas,
                     "tokens_totales": tokens_totales
                 }
+        except Exception as e:
+            print("Error al buscar viajes en MongoDB:", e)
+            raise
+        
+    def get_token_consumptions(self):
+        try:
+            query = {"cost": {"$exists": True}}
+            results = list(self.collection.find(query))
+            now = datetime.now()
+            month = now.month
+            year = now.year
+            last_30_days = now - timedelta(days=30)
+
+            import calendar
+            num_days = calendar.monthrange(year, month)[1]
+            all_days = list(range(1, num_days + 1))
+            all_months = list(range(1, 13))
+
+            consumptions = {
+                "month_total": 0,
+                "year_total": 0,
+                "total": 0,
+                "last_30_days_total": 0,
+                "days_for_month": {},      # {day: tokens}
+                "months_for_year": {},     # {month_number: tokens}
+                "days_last_30": {},        # {"dia-mes": tokens}
+                "month_name": calendar.month_name[month],
+                "month_number": month,
+                "year": year
+            }
+
+            for viaje in results:
+                date_str = viaje.get("date")
+                tokens = viaje.get("cost", 0)
+                if not date_str:
+                    continue
+                try:
+                    date_obj = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+                except Exception:
+                    continue
+
+                # Total general
+                consumptions["total"] += tokens
+
+                # Total anual
+                if date_obj.year == year:
+                    consumptions["year_total"] += tokens
+
+                    # Total mensual y por día del mes actual
+                    if date_obj.month == month:
+                        consumptions["month_total"] += tokens
+                        day = date_obj.day
+                        if day not in consumptions["days_for_month"]:
+                            consumptions["days_for_month"][day] = 0
+                        consumptions["days_for_month"][day] += tokens
+
+                    # Por meses del año actual
+                    m = date_obj.month
+                    if m not in consumptions["months_for_year"]:
+                        consumptions["months_for_year"][m] = 0
+                    consumptions["months_for_year"][m] += tokens
+
+                # Últimos 30 días
+                if date_obj >= last_30_days:
+                    consumptions["last_30_days_total"] += tokens
+                    key = f"{date_obj.day}-{date_obj.month}"
+                    if key not in consumptions["days_last_30"]:
+                        consumptions["days_last_30"][key] = 0
+                    consumptions["days_last_30"][key] += tokens
+
+            # Rellenar días del mes actual con 0 si no hay datos
+            for day in all_days:
+                if day not in consumptions["days_for_month"]:
+                    consumptions["days_for_month"][day] = 0
+
+            # Rellenar meses del año con 0 si no hay datos
+            for m in all_months:
+                if m not in consumptions["months_for_year"]:
+                    consumptions["months_for_year"][m] = 0
+
+            # Rellenar días de los últimos 30 días con 0 si no hay datos
+            for i in range(30, -1, -1):
+                d = now - timedelta(days=i)
+                key = f"{d.day}-{d.month}"
+                if key not in consumptions["days_last_30"]:
+                    consumptions["days_last_30"][key] = 0
+
+            # Ordenar los diccionarios por clave
+            consumptions["days_for_month"] = dict(sorted(consumptions["days_for_month"].items()))
+            consumptions["months_for_year"] = dict(sorted(consumptions["months_for_year"].items()))
+            consumptions["days_last_30"] = dict(sorted(
+                consumptions["days_last_30"].items(),
+                key=lambda x: (int(x[0].split('-')[1]), int(x[0].split('-')[0]))
+            ))
+
+            return consumptions
         except Exception as e:
             print("Error al buscar viajes en MongoDB:", e)
             raise

@@ -19,4 +19,5 @@ urlpatterns = [
     path('stats/', views.get_user_stats_view, name='get_stats'),  # Ruta para el endpoint /stats
     path('getAllActiveUsers/', views.get_all_active_users_view, name='get_all_active_users'),  # Ruta para el endpoint /get_all_active_users
     path('disableUser/', views.disable_user_view, name='disable_user'),  # Ruta para el endpoint /disableUser
+    path('getTokenConsumptions/', views.get_consumptions_view, name='get_token_consumptions'),  # Ruta para el endpoint /getTokenConsumptions
 ]

@@ -426,4 +426,20 @@ def disable_user_view(request):
         except User.DoesNotExist:
             return Response({"message": "User not found"}, status=status.HTTP_404_NOT_FOUND)
     else:
+        return Response({"message": checker[1]}, status=status.HTTP_401_UNAUTHORIZED)
+    
+@api_view(['POST'])
+def get_consumptions_view(request):
+    data = request.data.get('user_data')
+    if data is None:
+        return Response({"message": "User credentials not provided"}, status=status.HTTP_401_UNAUTHORIZED)
+    if data.get('role') != 'admin':
+        return Response({"message": "User is not admin"}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    checker = verify_token(data)
+    if checker[0]:
+        mongo_handler = MongoDBHandler()
+        consumptions = mongo_handler.get_token_consumptions()
+        return Response(consumptions, status=status.HTTP_200_OK)
+    else:
         return Response({"message": checker[1]}, status=status.HTTP_401_UNAUTHORIZED)    
