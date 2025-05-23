@@ -22,6 +22,7 @@
             <th>Email</th>
             <th>Alias</th>
             <th>Último acceso</th>
+            <th>Rol</th>
             <th>Tokens consumidos</th>
             <th>Acciones</th>
           </tr>
@@ -31,9 +32,10 @@
             <td>{{ user.email }}</td>
             <td>{{ user.alias }}</td>
             <td>{{ user.last_login }}</td>
+            <td>{{ user.role }}</td>
             <td>{{ user.stats?.tokens_totales ?? '0' }}</td>
             <td>
-              <button @click="showDisablePopup(user)">Desactivar Cuenta</button>
+              <button v-if="user.email !== 'Anonymous' && user.active && user.role !== 'Administrador'" @click="showDisablePopup(user)">Desactivar Cuenta</button>
             </td>
           </tr>
           <tr v-if="users.length === 0">

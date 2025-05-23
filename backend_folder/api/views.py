@@ -413,16 +413,26 @@ def get_all_active_users_view(request):
     
     checker = verify_token(data)
     if checker[0]:
-        Users = User.objects.filter(is_active=True, is_superuser=False)
+        Users = User.objects.filter()
         users_list = []
         for user in Users:
             user_dict = {
                 "email": user.email,
                 "alias": user.alias,
+                "role": "Administrador" if user.is_superuser else "Usuario",
                 "last_login": user.last_login.strftime("%Y-%m-%d %H:%M:%S") if user.last_login else None,
+                "active": user.is_active,
             }
             user_dict['stats'] = MongoDBHandler().get_user_stats(user.email)
             users_list.append(user_dict)
+        user_dict = {
+            "email": "Anonymous",
+            "alias": "Anonymous",
+            "role": "Usuario anónimo",
+            "last_login": None,
+        }
+        user_dict['stats'] = MongoDBHandler().get_user_stats(None)
+        users_list.append(user_dict)
         return Response(users_list, status=status.HTTP_200_OK)
     else:
         return Response({"message": checker[1]}, status=status.HTTP_401_UNAUTHORIZED)   
