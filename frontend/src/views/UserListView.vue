@@ -15,7 +15,9 @@ const router = useRouter();
 onMounted(async () => {
   const storedUserData = localStorage.getItem("user_data");
   if (storedUserData) {
-    if (storedUserData.role !== "admin") {
+    const JSONUserData = JSON.parse(storedUserData);
+    console.log(JSONUserData.role);
+    if (JSONUserData.role != "admin") {
         console.log("no tienes permisos");
         router.push("/login");
         return;
