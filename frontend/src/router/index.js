@@ -54,7 +54,12 @@ const routes = [
     meta: { title: "Plan Your Trip" },
     component: () => import("../views/UserListView.vue"),
   },
-
+  {
+    path: "/platform-consumption",
+    name: "platform-consumption",
+    meta: { title: "Plan Your Trip" },
+    component: () => import("../views/TokenConsumptionView.vue"),
+  },
 
 ];
 
