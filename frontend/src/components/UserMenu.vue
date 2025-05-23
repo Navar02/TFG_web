@@ -5,15 +5,25 @@
         </div>
         <div v-if="userData">
             <div class="user-info" @click="toggleDropdown">
-                <span>{{ userData.alias }}</span>
-                <button class="menu-toggle">
+                <button class="menu-toggle" :aria-expanded="dropdownVisible" aria-label="Abrir menú de usuario">
                     <svg-icon type="mdi" :path="dropdownIcon" :class="{ rotated: dropdownVisible }"></svg-icon>
                 </button>
+                <span class="user-alias">{{ userData.alias }}</span>
             </div>
             <div v-if="dropdownVisible" class="menu">
                 <div class="menu-item" @click="navigateTo('/guides')">Ver guías previas</div>
                 <div class="menu-item" @click="navigateTo('/stats')">Consultar estadísticas</div>
-                <div class="menu-item" @click="logout">Cerrar Sesión</div>
+                <div 
+                    class="menu-item" 
+                    v-if="userData && userData.role === 'admin'" 
+                    @click="navigateTo('/users')"
+                >Consultar Lista de Usuarios</div>
+                <div 
+                    class="menu-item" 
+                    v-if="userData && userData.role === 'admin'" 
+                    @click="navigateTo('/platform-consumption')"
+                >Consultar Consumos de la plataforma</div>
+                <div class="menu-item logout" @click="logout">Cerrar Sesión</div>
             </div>
         </div>
         <div v-else>
@@ -100,10 +110,11 @@ export default {
     width: 250px;
     padding: 20px;
     border-radius: 10px;
-    position: absolute;
+    position: fixed;
     top: 10px;
     right: 10px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 3000;
 }
 
 .menu-header {
@@ -120,30 +131,54 @@ export default {
 }
 
 .user-info {
-    cursor: pointer;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    background-color: #2d3748;
-    padding: 10px;
-    border-radius: 5px;
+    background: none;
+    padding: 0;
+    border-radius: 0;
+    gap: 10px;
+    cursor: pointer;
 }
 
 .menu-toggle {
-    background: none;
+    background: #2d3748;
     border: none;
     cursor: pointer;
     color: white;
+    border-radius: 50%;
+    padding: 10px;
+    transition: background 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    outline: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.menu-toggle:hover, .menu-toggle:focus {
+    background: #3b4252;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.18);
 }
 
 svg-icon {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     transition: transform 0.3s ease;
+    display: block;
 }
 
 svg-icon.rotated {
     transform: rotate(180deg);
+}
+
+.user-alias {
+    margin-left: 8px;
+    color: #cbd5e0;
+    font-weight: 600;
+    font-size: 16px;
+    cursor: default;
+    user-select: text;
+    pointer-events: none;
 }
 
 .menu {
@@ -155,16 +190,37 @@ svg-icon.rotated {
 }
 
 .menu-item {
-    padding: 10px;
+    padding: 12px;
     border-radius: 5px;
     cursor: pointer;
     color: #cbd5e0;
     text-align: center;
-    transition: background-color 0.3s ease;
+    font-weight: 500;
+    font-size: 16px;
+    background-color: #3b4252;
+    transition: background-color 0.3s, color 0.3s, box-shadow 0.3s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    user-select: none;
+    outline: none;
 }
 
-.menu-item:hover {
+.menu-item:hover, .menu-item:focus {
     background-color: #2d3748;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+}
+
+.menu-item.logout {
+    background-color: #b71c1c;
+    color: #fff;
+    font-weight: bold;
+    margin-top: 10px;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.menu-item.logout:hover, .menu-item.logout:focus {
+    background-color: #a31515;
+    color: #fff;
 }
 
 /* Animación para el despliegue */
@@ -173,7 +229,6 @@ svg-icon.rotated {
         opacity: 0;
         transform: translateY(-10px);
     }
-
     to {
         opacity: 1;
         transform: translateY(0);

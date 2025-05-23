@@ -47,7 +47,14 @@ const routes = [
     name: "user-stats",
     meta: { title: "Plan Your Trip" },
     component: () => import("../views/StatisticsView.vue"),
-  }
+  },
+  {
+    path: "/users",
+    name: "users",
+    meta: { title: "Plan Your Trip" },
+    component: () => import("../views/UserListView.vue"),
+  },
+
 
 ];
 
