@@ -375,4 +375,55 @@ def get_user_stats_view(request):
         return Response(user_stats, status=status.HTTP_200_OK)
     else:
         return Response({"message": checker[1]}, status=status.HTTP_401_UNAUTHORIZED)
+
+@api_view(['POST'])
+def get_all_active_users_view(request):
+    data = request.data.get('user_data')
+    if data is None:
+        return Response({"message": "User credentials not provided"}, status=status.HTTP_401_UNAUTHORIZED)
     
+    if data.get('role') != 'admin':
+        return Response({"message": "User is not admin"}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    checker = verify_token(data)
+    if checker[0]:
+        Users = User.objects.filter(is_active=True, is_superuser=False)
+        users_list = []
+        for user in Users:
+            user_dict = {
+                "email": user.email,
+                "alias": user.alias,
+                "last_login": user.last_login.strftime("%Y-%m-%d %H:%M:%S") if user.last_login else None,
+            }
+            user_dict['stats'] = MongoDBHandler().get_user_stats(user.email)
+            users_list.append(user_dict)
+        return Response(users_list, status=status.HTTP_200_OK)
+    else:
+        return Response({"message": checker[1]}, status=status.HTTP_401_UNAUTHORIZED)   
+    
+@api_view(['POST'])
+def disable_user_view(request):
+    data = request.data.get('user_data')
+    if data is None:
+        return Response({"message": "User credentials not provided"}, status=status.HTTP_401_UNAUTHORIZED)
+    if data.get('role') != 'admin':
+        return Response({"message": "User is not admin"}, status=status.HTTP_401_UNAUTHORIZED)
+    checker = verify_token(data)
+    if checker[0]:
+        email = request.data.get('email')
+        if not email:
+            return Response({"message": "Email not provided"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = User.objects.get(email=email)
+            if user.is_superuser:
+                return Response({"message": "Cannot disable admin user"}, status=status.HTTP_400_BAD_REQUEST)
+            if not user.is_active:
+                return Response({"message": "User is already disabled"}, status=status.HTTP_400_BAD_REQUEST)
+            user.is_active = False
+            user.save()
+            return Response({"message": "User disabled successfully"}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({"message": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+    else:
+        return Response({"message": checker[1]}, status=status.HTTP_401_UNAUTHORIZED)    
