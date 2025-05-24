@@ -29,6 +29,7 @@
                             <v-list-item-content>
                               <v-list-item-title>{{ place.nombre }}</v-list-item-title>
                               <v-list-item-subtitle>{{ place.descripcion }}</v-list-item-subtitle>
+                              <v-list-item-subtitle>Duración de la visita: {{ place.duracion_visita }}</v-list-item-subtitle>
                               <v-list dense>
                                 <div v-for="activity in place.actividades" :key="activity" class="activity">
                                   - {{ activity }}
